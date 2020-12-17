@@ -157,6 +157,39 @@ def pvp_inventory():
         Pokemon('Swampert', (13, 14, 13), cp=2467),
     ]
 
+    inventory = [
+        Pokemon('Tangrowth', (4, 15, 15), cp=2592),
+        Pokemon('Tangrowth', (14, 15, 13), cp=1716),
+        Pokemon('Tangela', (9, 14, 13), cp=1998),
+        Pokemon('Tangela', (7, 10, 7), cp=1715),
+        Pokemon('Tangela', (12, 15, 15), cp=1259),
+        Pokemon('Tangela', (15, 11, 15), cp=1264),
+        Pokemon('Tangela', (15, 11, 15), cp=1264),
+    ]
+
+    inventory = [
+        Pokemon('Snover', (15, 14, 14), cp=1019),
+        Pokemon('Snover', (5, 14, 12), cp=920),
+        Pokemon('Snover', (10, 10, 15), cp=623),
+        Pokemon('Snover', (0, 10, 0), cp=438),
+        Pokemon('Snover', (7, 12, 10), cp=423),
+        Pokemon('Snover', (9, 13, 13), cp=405, shadow=True),
+        Pokemon('Snover', (5, 9, 5), cp=228, shadow=True),
+    ]
+
+    inventory = [
+        Pokemon('Cottonee', (8, 15, 15), cp=597),
+        Pokemon('Cottonee', (1, 13, 13), cp=396),
+        Pokemon('Cottonee', (4, 10, 9), cp=468),
+        Pokemon('Cottonee', (11, 11, 10), cp=276),
+        Pokemon('Cottonee', (9, 9, 4), cp=209),
+    ]
+
+    inventory = [
+        Pokemon('Ferroseed', (12, 12, 11), cp=516),
+        Pokemon('Ferroseed', (10, 13, 13), cp=377),
+        Pokemon('Ferroseed', (14, 14, 13), cp=529),
+    ]
     # for self in inventory:
     #     list(self.family())
 
@@ -186,11 +219,11 @@ def pvp_inventory():
             print(' ========== ')
             print(' --- {} in {} --- '.format(name, leage_name))
             not_eligible = [p for p in group if p.cp is not None and p.cp > max_cp]
+            eligible = [p for p in group if p.cp is not None and p.cp <= max_cp]
             print('not_eligible = {!r}'.format(not_eligible))
-            have_ivs = [p.ivs for p in group if p.cp is None or p.cp <= max_cp]
-            if len(have_ivs) > 0:
-                first = ub.peek(group)
-                have_ivs = group
+            if len(eligible) > 0:
+                first = ub.peek(eligible)
+                have_ivs = eligible
                 df = first.leage_rankings_for(have_ivs, max_cp=max_cp,
                                               max_level=max_level)
                 all_dfs.append(df)
