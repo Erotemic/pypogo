@@ -1,0 +1,770 @@
+"""
+TODO:
+    - [ ] Implement ranges for unknown properties
+"""
+import re
+import ubelt as ub
+from pypogo.pogo_api import api
+
+
+def calc_cp(attack, defense, stamina, level):
+    """
+    References:
+        https://www.dragonflycave.com/pokemon-go/stats
+    """
+    # cpm_step_lut = {
+    #     0: 0.009426125469,
+    #     10: 0.008919025675,
+    #     20: 0.008924905903,
+    #     30: 0.00445946079,
+    # }
+    cmp_lut = {
+        1: 0.09399999678134918, 1.5: 0.1351374313235283, 2.0: 0.16639786958694458,
+        2.5: 0.1926509141921997, 3.0: 0.21573247015476227, 3.5: 0.23657265305519104,
+        4.0: 0.2557200491428375, 4.5: 0.27353037893772125, 5.0: 0.29024988412857056,
+        5.5: 0.3060573786497116, 6.0: 0.3210875988006592, 6.5: 0.33544503152370453,
+        7.0: 0.3492126762866974, 7.5: 0.362457737326622, 8.0: 0.37523558735847473,
+        8.5: 0.38759241108516856, 9.0: 0.39956727623939514, 9.5: 0.4111935495172506,
+        10.0: 0.4225000143051148, 10.5: 0.4329264134104144, 11.0: 0.443107545375824,
+        11.5: 0.4530599538719858, 12.0: 0.46279838681221, 12.5: 0.4723360780626535,
+        13.0: 0.4816849529743195, 13.5: 0.4908558102324605, 14.0: 0.4998584389686584,
+        14.5: 0.5087017565965652, 15.0: 0.517393946647644, 15.5: 0.5259425118565559,
+        16.0: 0.5343543291091919, 16.5: 0.5426357612013817, 17.0: 0.5507926940917969,
+        17.5: 0.5588305993005633, 18.0: 0.5667545199394226, 18.5: 0.574569147080183,
+        19.0: 0.5822789072990417, 19.5: 0.5898879119195044, 20.0: 0.5974000096321106,
+        20.5: 0.6048236563801765, 21.0: 0.6121572852134705, 21.5: 0.6194041110575199,
+        22.0: 0.6265671253204346, 22.5: 0.633649181574583, 23.0: 0.6406529545783997,
+        23.5: 0.6475809663534164, 24.0: 0.654435634613037, 24.5: 0.6612192690372467,
+        25.0: 0.667934000492096, 25.5: 0.6745819002389908, 26.0: 0.6811649203300476,
+        26.5: 0.6876849085092545, 27.0: 0.6941436529159546, 27.5: 0.7005428969860077,
+        28.0: 0.7068842053413391, 28.5: 0.7131690979003906, 29.0: 0.719399094581604,
+        29.5: 0.7255756109952927, 30.0: 0.7317000031471252, 30.5: 0.7347410172224045,
+        31.0: 0.7377694845199585, 31.5: 0.740785576403141, 32.0: 0.7437894344329834,
+        32.5: 0.7467812150716782, 33.0: 0.7497610449790955, 33.5: 0.7527291029691696,
+        34.0: 0.7556855082511902, 34.5: 0.7586303651332855, 35.0: 0.7615638375282288,
+        35.5: 0.7644860669970512, 36.0: 0.7673971652984619, 36.5: 0.7702972739934921,
+        37.0: 0.7731865048408508, 37.5: 0.7760649472475052, 38.0: 0.7789327502250671,
+        38.5: 0.78179006, 39.0: 0.78463697, 39.5: 0.78747358,
+        40.0: 0.79030001, 40.5: 0.79280001, 41.0: 0.79530001,
+        41.5: 0.79780001, 42.0: 0.8003, 42.5: 0.8028,
+        43.0: 0.8053, 43.5: 0.8078, 44.0: 0.81029999,
+        44.5: 0.81279999, 45.0: 0.81529999,
+    }
+    # cpm_step = cpm_step_lut[(level // 10) * 10]
+    # cpm_step
+    cp_multiplier = cmp_lut[level]
+
+    # https://gamepress.gg/pokemongo/cp-multiplier
+    # https://gamepress.gg/pokemongo/pokemon-stats-advanced#:~:text=Calculating%20CP,*%20CP_Multiplier%5E2)%20%2F%2010
+    a, d, s = attack, defense, stamina
+
+    adjusted = {
+        'attack': a * cp_multiplier,
+        'defense': d * cp_multiplier,
+        'stamina': int(s * cp_multiplier),
+    }
+    cp = int(a * (d ** 0.5) * (s ** 0.5) * (cp_multiplier ** 2) / 10)
+    return cp, adjusted
+
+
+# class Moves():
+#     def __init__(moves):
+#         pass
+#     pass
+
+
+class Pokemon(ub.NiceRepr):
+    """
+
+    Example:
+        import sys, ubelt
+        sys.path.append(ubelt.expandpath('~/misc/pkmn'))
+        from query_team_builder import *  # NOQA
+        self = Pokemon('weedle')
+
+        list(self.family())
+
+    """
+    def __init__(self, name, ivs=None, level=None, moves=None, shadow=False,
+                 form='Normal', cp=None, autobuild=True, shiny=False,
+                 adjusted=None):
+        self.name = name.lower()
+        self.level = level
+        self.ivs = ivs
+        self.moves = moves
+        self.shadow = shadow
+        self.shiny = shiny
+        if shadow:
+            form = 'Shadow'
+        self.form = form
+        self.api = api
+        self.cp = cp
+        self.adjusted = adjusted
+
+        self.populate_stats()
+
+        if cp is None:
+            if level is not None and self.ivs is not None:
+                if autobuild:
+                    self.populate_cp()
+        else:
+            # If CP is specified, get the one that is closest
+            # TODO: handle unknown ivs
+            if level is None and self.ivs is not None:
+                self.populate_level()
+
+    def __json__(self):
+        return {
+            'name': self.name,
+            'ivs': self.ivs,
+            'level': self.level,
+            'form': self.form,
+            'shadow': self.shadow,
+            'shiny': self.shiny,
+            'moves': self.moves,
+            # Depends on other properties
+            'cp': self.cp,
+            'adjusted': self.adjusted,
+        }
+
+    def copy(self, **overwrite):
+        """
+        Create a copy of this pokemon with possibly different attributes
+        """
+        kw = self.__json__()
+        # Invalidate depenencies
+        if 'ivs' in overwrite:
+            if overwrite['ivs'] != kw['ivs']:
+                kw.pop('cp', None)
+                kw.pop('adjusted', None)
+
+        if 'level' in overwrite:
+            if overwrite['level'] != kw['level']:
+                kw.pop('cp', None)
+                kw.pop('adjusted', None)
+
+        if 'cp' in overwrite:
+            if overwrite['cp'] != kw['cp']:
+                kw.pop('level', None)
+
+        kw.update(overwrite)
+        new = Pokemon(**kw)
+        return new
+
+    def display_name(self):
+        parts = [self.name]
+        if self.shadow:
+            shadow_glyph = '😈'
+            parts.append(shadow_glyph)
+
+        elif self.form not in {'Normal', 'Shadow', 'Purified'}:
+            parts.append('({})'.format(self.form))
+
+        if self.form == 'Purified':
+            purified_glyph = '👼'
+            parts.append(purified_glyph)
+
+        if self.shiny:
+            shiny_glpyh = '✨'
+            parts.append(shiny_glpyh)
+        disp_name = ''.join(parts)
+        return disp_name
+
+    def __nice__(self):
+        disp_name = self.display_name()
+        info = '{}, {}, {}, {}, {}'.format(disp_name, self.cp, self.level, self.ivs, self.moves)
+        return info
+        # return str([self.name] + self.moves + [self.level] + self.ivs)
+
+    def lookup_moves(self):
+        possible_moves = api.name_to_moves[self.name]
+        return possible_moves
+
+    def populate_level(self, max_level=45):
+        """ Try and find the level given the info """
+        import numpy as np
+        # hacky, could be more elegant
+        target_cp = self.cp
+        iva, ivd, ivs = self.ivs
+        attack = self.info['base_attack'] + iva
+        defense = self.info['base_defense'] + ivd
+        stamina = self.info['base_stamina'] + ivs
+
+        found_level = None
+
+        for cand_level in np.arange(1, max_level + 0.5, 0.5):
+            # TODO: could binary search
+            cp, adjusted = calc_cp(attack, defense, stamina, cand_level)
+            if cp == target_cp:
+                found_level = cand_level
+            elif cp > target_cp:
+                break
+
+        if found_level is None:
+            raise Exception('cp does not match ivs')
+        else:
+            self.level = found_level
+
+    def populate_stats(self):
+        info = api.get_info(name=self.name, form=self.form)
+        self.learnable = api.learnable[self.name]
+        self.info = info
+        # self.items = items
+
+    def evolved(self):
+        """
+        Ignore:
+            self = Pokemon('gastly', ivs=[6, 13, 15], cp=400)
+            self.evolved()
+
+            self = Pokemon('eevee', ivs=[6, 13, 15], cp=400)
+            self.evolved()
+
+            self = Pokemon('mew', ivs=[6, 13, 15], cp=400)
+            self.evolved()
+        """
+        possibilities = []
+        for other in self.family(onlyadj=True):
+            # other.populate_cp()
+            possibilities.append(other)
+        return possibilities
+
+    def purify(self):
+        """
+        Example:
+            >>> self = Pokemon('ralts', ivs=[6, 13, 15], level=20,
+            >>>                 shadow=True, shiny=True)
+            >>> new = self.purify()
+            >>> print('self = {!r}'.format(self))
+            >>> print('new  = {!r}'.format(new))
+        """
+        if not self.shadow:
+            raise Exception('Only can purify shadow pokemon')
+
+        overwrite = {}
+        if self.ivs is not None:
+            new_ivs = tuple([min(15, s + 2) for s in self.ivs])
+            overwrite['ivs'] = new_ivs
+        overwrite['form'] = 'Purified'
+        overwrite['shadow'] = False
+        # TODO: replace frustration with return
+        new = self.copy(**overwrite)
+        return new
+
+    def family(self, ancestors=True, node=False, onlyadj=False):
+        """
+        Get other members of this pokemon family
+
+        Yields:
+            Pokemon: other members of this family
+
+        Ignore:
+            self = Pokemon('gastly', ivs=[6, 13, 15])
+            self = Pokemon('haunter', ivs=[6, 13, 15])
+            self = Pokemon('gengar', ivs=[6, 13, 15])
+            list(self.family())
+
+            self = Pokemon('magikarp', ivs=[6, 13, 15])
+            list(self.family())
+
+            self = Pokemon('eevee', ivs=[6, 13, 15])
+            list(self.family(onlyadj=True))
+
+            self = Pokemon('ralts', ivs=[6, 13, 15], shadow=True)
+            list(self.family(onlyadj=True))
+            list(self.family())
+        """
+        import networkx as nx
+        blocklist = set()
+        if not node:
+            blocklist.add(self.name)
+
+        if not ancestors:
+            toadd = set(nx.ancestors(api.evo_graph, self.name))
+            blocklist.update(toadd)
+
+        cc = api.name_to_family[self.name]
+        if onlyadj:
+            keeplist = set(api.evo_graph.adj[self.name])
+            blocklist = set(cc) - keeplist
+
+        kw = {
+            'level': self.level,
+            'form': self.form,
+            'ivs': self.ivs,
+            'shadow': self.shadow,
+            'shiny': self.shiny,
+        }
+        for name in cc:
+            if name not in blocklist:
+                if name == self.name:
+                    other = Pokemon(name, cp=self.cp, **kw)
+                else:
+                    other = Pokemon(name, **kw)
+                yield other
+
+                if other.shadow:
+                    yield other.purify()
+
+    def populate_cp(self):
+        level = self.level
+        iva, ivd, ivs = self.ivs
+        attack = self.info['base_attack'] + iva
+        defense = self.info['base_defense'] + ivd
+        stamina = self.info['base_stamina'] + ivs
+        cp, adjusted = calc_cp(attack, defense, stamina, level)
+        self.cp = cp
+        self.adjusted = adjusted
+        return cp, adjusted
+
+    def check_evolution_cps(self, max_cp=1500, max_level=45):
+        """
+        self = Pokemon('gastly', ivs=[6, 13, 15])
+        self.check_evolution_cps()
+
+        self = Pokemon('gyarados', ivs=[6, 13, 15])
+        self.check_evolution_cps()
+
+        self = Pokemon('magikarp', ivs=[6, 13, 15])
+        self.check_evolution_cps()
+        """
+        import numpy as np
+        evos = list(self.family(ancestors=False))
+
+        if len(evos) == 0:
+            print('no evolutions available')
+
+        for evo in evos:
+            other = evo
+
+            best_level = None
+            for level in list(np.arange(1, max_level + 0.5, 0.5)):
+                # TODO: could binary search
+                other.level = level
+                other.populate_cp()
+                if other.cp <= max_cp:
+                    best_level = level
+                else:
+                    break
+            other.level = best_level
+            other.populate_cp()
+
+            print('To achieve other = {!r}'.format(other))
+            self.level = best_level
+            cp, adjusted = self.populate_cp()
+            print('self = {!r}'.format(self))
+            print('Pokemon CP must be less than this to be used in league')
+            print('cp = {!r}'.format(cp))
+
+    def leage_rankings_for(self, have_ivs, max_cp=1500, max_level=45):
+        """
+        Given a set of IVs for this pokemon compute the leage rankings
+        """
+        leage_df = self.find_leage_rankings(max_cp=max_cp, max_level=max_level)
+        leage_df = leage_df.set_index(['iva', 'ivd', 'ivs'])
+
+        if abs(min(leage_df['cp'].max() - min(3000, max_cp), 0)) > 200:
+            print('Out of this leage {}'.format(max_cp))
+        else:
+            rows = []
+            for haves in have_ivs:
+                # ultra_row = ultra_df.loc[haves]
+                leage_row = leage_df.loc[haves]
+                rows.append({
+                    'iva': haves[0],
+                    'ivd': haves[1],
+                    'ivs': haves[2],
+                    'rank': leage_row['rank'],
+                    'level': leage_row['level'],
+                    'cp': leage_row['cp'],
+                    'stat_product': leage_row['stat_product'],
+                    'attack': leage_row['attack'],
+                    'defense': leage_row['defense'],
+                    'stamina': leage_row['stamina'],
+                    'percent': leage_row['percent'],
+                })
+            import pandas as pd
+            rankings = pd.DataFrame.from_dict(rows)
+            #
+            print('')
+            print('Leage {} Rankings'.format(max_cp))
+            print('self = {!r}'.format(self))
+            print(rankings.sort_values('rank'))
+
+    def find_leage_rankings(self, max_cp=1500, max_level=45):
+        """
+        Calculate the leage rankings for this pokemon's IVs, based on the
+        adjusted stat product heuristic.
+
+        Ignore:
+            >>> import sys, ubelt
+            >>> sys.path.append(ubelt.expandpath('~/misc/pkmn'))
+            >>> from query_team_builder import *  # NOQA
+            >>> self = Pokemon('beedrill')
+            >>> beedrill_df = self.find_leage_rankings(max_cp=1500)
+
+            >>> # Find the best IVs that we have for PVP
+            >>> self = Pokemon('empoleon')
+            >>> have_ivs = [
+            >>>     (0, 10, 14),
+            >>>     (1, 11, 5),
+            >>>     (1, 5, 7),
+            >>>     (1, 9, 13),
+            >>>     (2, 15, 13),
+            >>>     (2, 2, 10),
+            >>>     (2, 6, 9),
+            >>>     (3, 13, 11),
+            >>>     (3, 3, 2),
+            >>>     (4, 13, 13),
+            >>>     (5, 13, 14),
+            >>>     (4, 14, 14),
+            >>>     (7, 13, 3),
+            >>>     (13, 14, 14),
+            >>>     (15, 14, 14),
+            >>> ]
+
+            >>> self = Pokemon('beedrill')
+            >>> have_ivs = [
+            >>>     (0, 8, 14),
+            >>>     (0, 12, 14),
+            >>>     (1,  3, 10),
+            >>>     (1, 13, 6),
+            >>>     (4, 11, 13),
+            >>>     (4, 14, 13),
+            >>>     (1, 13, 7),
+            >>>     (1, 10, 8),
+            >>>     (4, 13, 13),
+            >>>     (4, 14, 14),
+            >>>     (4, 15, 12),
+            >>>     (5, 14, 11),
+            >>>     (11, 15, 14),
+            >>>     (15, 15, 15),
+            >>>     (12, 15, 15),
+            >>> ]
+            >>> self.leage_rankings_for(have_ivs)
+
+            >>> have_ivs = [
+            >>>     (4, 13, 10),
+            >>>     (5, 11, 14),
+            >>>     (4, 13, 11),
+            >>>     (6, 13, 15),
+            >>>     (7, 12, 13),
+            >>>     (7, 14, 14),
+            >>>     (7, 15, 15),
+            >>>     (7, 2, 9),
+            >>>     (10, 15, 11),
+            >>>     (15, 15, 15),
+            >>>     (7, 15, 15),
+            >>> ]
+            >>> self = Pokemon('gengar')
+            >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
+            >>> self.leage_rankings_for(have_ivs)
+
+            >>> self = Pokemon('haunter')
+            >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
+            >>> self.leage_rankings_for(have_ivs)
+
+            >>> have_ivs = [
+            >>>     (12, 11, 14),
+            >>>     (12, 15, 15),
+            >>>     (15, 15, 15),
+            >>> ]
+            >>> Pokemon('blaziken').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('blaziken').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('blaziken').leage_rankings_for(have_ivs, max_cp=np.inf)
+
+            >>> have_ivs = [
+            >>>     (0, 2, 14),
+            >>>     (4, 2, 13),
+            >>>     (11, 13, 12),
+            >>>     (4, 13, 9),
+            >>>     (15, 12, 13),
+            >>>     (13, 14, 13),
+            >>>     (13, 14, 13),
+            >>>     (14, 14, 10),
+            >>>     (6, 15, 11),  # purified
+            >>>     (13, 15, 14),  # purified
+            >>> ]
+            >>> Pokemon('swampert').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('swampert').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('swampert').leage_rankings_for(have_ivs, max_cp=np.inf)
+
+            >>> have_ivs = [
+            >>>     (1, 2, 15),
+            >>>     (12, 15, 14),
+            >>>     (14, 15, 14),
+            >>>     (14, 14, 14),
+            >>>     (14, 13, 15),
+            >>>     (15, 15, 10),
+            >>> ]
+            >>> Pokemon('sceptile').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('sceptile').leage_rankings_for(have_ivs, max_cp=2500)
+
+            >>> have_ivs = [
+            >>>     (0, 10, 15),
+            >>>     (1, 14, 11),
+            >>>     (11, 14, 13),
+            >>>     (12, 12, 13),
+            >>>     (14, 13, 13),
+            >>>     (2, 13, 12),
+            >>>     (2, 13, 15),
+            >>>     (2, 14, 14),
+            >>>     (2, 15, 14),
+            >>>     (3, 12, 11),
+            >>>     (3, 4, 15),
+            >>>     (3, 13, 14),
+            >>>     (3, 5, 2),
+            >>>     (4, 10, 13),
+            >>>     (4, 12, 15), # shadow
+            >>>     (5, 15, 12),
+            >>>     (7, 13, 15),
+            >>>     (7, 15, 8),
+            >>>     (15, 13, 15),
+            >>> ]
+            >>> Pokemon('gyarados').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('gyarados').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('gyarados').leage_rankings_for(have_ivs, max_cp=1500)
+
+
+            >>> have_ivs = [
+            >>>     (14, 14, 15),
+            >>>     (10, 14, 15),
+            >>>     (15, 15, 15),
+            >>>     (15, 15, 15),
+            >>> ]
+            >>> Pokemon('rhyperior').leage_rankings_for(have_ivs, max_cp=np.inf)
+
+            >>> have_ivs = [
+            >>>     (14, 14, 14),
+            >>>     (12, 13, 14),
+            >>>     (13, 14, 14),
+            >>>     (15, 13, 14),
+            >>>     (8, 6, 8),
+            >>> ]
+            >>> Pokemon('vigoroth').leage_rankings_for(have_ivs, max_cp=1500)
+
+
+            >>> have_ivs = [
+            >>>     (6, 15, 13),
+            >>>     (3, 4, 14),
+            >>>     (2, 9, 15),
+            >>>     (6, 14, 15),
+            >>>     (7, 15, 15),
+            >>>     (10, 15, 15),
+            >>> ]
+            >>> Pokemon('shiftry').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('shiftry').leage_rankings_for(have_ivs, max_cp=2500)
+
+            >>> have_ivs = [
+            >>>     (15, 15, 14),
+            >>>     (0, 7, 8),
+            >>>     (3, 12, 14),
+            >>>     (5, 5, 15),
+            >>>     (4, 7, 12),
+            >>>     (15, 14, 14),
+            >>>     (10, 14, 15),
+            >>> ]
+            >>> Pokemon('alakazam').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('alakazam').leage_rankings_for(have_ivs, max_cp=2500)
+
+            >>> have_ivs = [
+            >>>     (0, 15, 6),
+            >>>     (11, 10, 10),
+            >>>     (12, 12, 11),
+            >>>     (15, 10, 12),
+            >>> ]
+            >>> Pokemon('salamence').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('salamence').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('salamence').leage_rankings_for(have_ivs, max_cp=np.inf)
+
+            >>> have_ivs = [
+            >>>     (6, 10, 10),
+            >>>     (11, 9, 14),
+            >>>     (13, 12, 14),
+            >>>     (15, 15, 15),
+            >>>     (15, 15, 5),
+            >>> ]
+            >>> Pokemon('flygon').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('flygon').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('flygon').leage_rankings_for(have_ivs, max_cp=np.inf)
+
+            >>> have_ivs = [
+            >>>     (6, 11, 11),
+            >>>     (10, 11, 10),
+            >>>     (10, 11, 12),
+            >>>     (6, 14, 4),
+            >>>     (15, 12, 15),
+            >>>     (15, 7, 15),
+            >>> ]
+            >>> Pokemon('mamoswine').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('mamoswine').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('mamoswine').leage_rankings_for(have_ivs, max_cp=np.inf)
+
+
+        """
+        rows = []
+        import itertools as it
+        import numpy as np
+
+        for iva, ivd, ivs in it.product(range(16), range(16), range(16)):
+            attack = self.info['base_attack'] + iva
+            defense = self.info['base_defense'] + ivd
+            stamina = self.info['base_stamina'] + ivs
+
+            best_level = None
+            best_cp = None
+            best_adjusted = None
+            for level in list(np.arange(1, max_level + 0.5, 0.5)):
+                cand_cp, adjusted = calc_cp(attack, defense, stamina, level)
+                if cand_cp <= max_cp:
+                    best_cp = cand_cp
+                    best_level = level
+                    best_adjusted = adjusted
+                else:
+                    break
+
+            row = {
+                'iva': iva,
+                'ivd': ivd,
+                'ivs': ivs,
+                'cp': best_cp,
+                'level': best_level,
+                'attack': best_adjusted['attack'],
+                'defense': best_adjusted['defense'],
+                'stamina': best_adjusted['stamina'],
+            }
+            rows.append(row)
+
+        import kwarray
+        df = kwarray.DataFrameArray.from_dict(rows)
+        df = df.pandas()
+        df['stat_product'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
+        df = df.sort_values('stat_product', ascending=False)
+        df['rank'] = np.arange(1, len(df) + 1)
+        df = df.set_index('rank', drop=False)
+        min_ = df['stat_product'].min()
+        max_ = df['stat_product'].max()
+        df['percent'] = ((df['stat_product'] - min_) / (max_ - min_)) * 100
+        return df
+
+    def calc_cp(self):
+        if self.level is None:
+            best_cp = 0
+            best_level = 0
+            # levels = [y + x for x in range(1, 45) for y in [0, 0.5]]
+            for level in range(1, 45):
+                iva, ivd, ivs = self.ivs
+                if iva is None:
+                    iva = 10
+                if ivd is None:
+                    ivd = 10
+                if ivs is None:
+                    ivs = 10
+                attack = self.info['base_attack'] + iva
+                defense = self.info['base_defense'] + ivd
+                stamina = self.info['base_stamina'] + ivs
+                cand_cp = calc_cp(attack, defense, stamina, level)
+                if cand_cp > 1500:
+                    break
+                best_cp = cand_cp
+                best_level = level
+                print('best_cp = {!r}'.format(best_cp))
+                print('best_level = {!r}'.format(best_level))
+
+        level = self.level
+        iva, ivd, ivs = self.ivs
+        attack = self.info['base_attack'] + iva
+        defense = self.info['base_defense'] + ivd
+        stamina = self.info['base_stamina'] + ivs
+        cp, adjusted = calc_cp(attack, defense, stamina, level)
+        return cp
+
+    @classmethod
+    def from_pvpoke_row(cls, row):
+        """
+        Example:
+            from query_team_builder import *  # NOQA
+            row = 'victreebel_shadow-shadow,RAZOR_LEAF,LEAF_BLADE,FRUSTRATION,22.5,4,14,14'
+            self = Pokemon.from_pvpoke_row(row)
+        """
+        name = row[0]
+        shadow = False
+        if name.endswith('-shadow'):
+            name = name.split('-shadow')[0]
+            # weird case for victreebel
+            if name.endswith('_shadow'):
+                name = name.split('_shadow')[0]
+            shadow = True
+        level = None
+        ivs = [None, None, None]
+
+        moves = []
+        idx = 0
+        for idx in range(1, 4):
+            if idx >= len(row):
+                break
+            if not re.match('[a-z]+', row[idx].lower()):
+                break
+            moves.append(row[idx])
+        idx += 1
+        if idx < len(row):
+            level = float(row[idx])
+        idx += 1
+        if idx < len(row):
+            ivs = list(map(int, row[idx:]))
+        self = cls(name, level, ivs, moves, shadow=shadow)
+        return self
+
+    def to_pvpoke_url(self):
+        parts = []
+        parts.append(self.name)
+        if self.level is not None:
+            parts.append(str(self.level))
+
+        needs_441 = False
+
+        if self.ivs and all(v is not None for v in self.ivs):
+            parts.extend(list(map(str, self.ivs)))
+            needs_441 = True
+        if self.shadow:
+            parts.append('shadow')
+            needs_441 = True
+
+        if needs_441:
+            parts.append('4-4-1')  # no idea what this is
+
+        if self.moves:
+            parts.append('m')
+            moves = self.moves + ([None] * max(0, 3 - len(self.moves)))
+            fm, cm1, cm2 = moves
+
+            fixup = {
+                'FUTURE_SIGHT': 'FUTURESIGHT',
+            }
+            cm1 = fixup.get(cm1, cm1)
+            cm2 = fixup.get(cm2, cm2)
+
+            fm_idx = api.learnable[self.name]['fast'].index(fm)
+            cm1_idx = api.learnable[self.name]['charge'].index(cm1) + 1
+            parts.append(str(fm_idx))
+            parts.append(str(cm1_idx))
+            if cm2 is not None:
+                if cm2.lower() == 'frustration':
+                    # hack for frustration
+                    cm2_idx = 0
+                else:
+                    cm2_idx = api.learnable[self.name]['charge'].index(cm2) + 1
+                parts.append(str(cm2_idx))
+        else:
+            parts.append('m-1-1-2')
+
+        # parts.append(self.moves[0])
+        # parts.append(self.moves[1])
+        # parts.append('0')
+        # parts.append(self.moves[2])
+        # parts.append('1')
+        # need a lut
+        # for move in self.moves:
+        #     pass
+        code = '-'.join(parts)
+        return code
