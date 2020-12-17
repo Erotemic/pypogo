@@ -1,89 +1,33 @@
 """
+Defines the class that represents a pokemon as well as operations that can be
+applied on that pokemon. More functionality will be added over time.
+
 TODO:
     - [ ] Implement ranges for unknown properties
 """
 import re
 import ubelt as ub
+import itertools as it
+import numpy as np
+import pandas as pd
+import networkx as nx
 from pypogo.pogo_api import api
-
-
-def calc_cp(attack, defense, stamina, level):
-    """
-    References:
-        https://www.dragonflycave.com/pokemon-go/stats
-    """
-    # cpm_step_lut = {
-    #     0: 0.009426125469,
-    #     10: 0.008919025675,
-    #     20: 0.008924905903,
-    #     30: 0.00445946079,
-    # }
-    cmp_lut = {
-        1: 0.09399999678134918, 1.5: 0.1351374313235283, 2.0: 0.16639786958694458,
-        2.5: 0.1926509141921997, 3.0: 0.21573247015476227, 3.5: 0.23657265305519104,
-        4.0: 0.2557200491428375, 4.5: 0.27353037893772125, 5.0: 0.29024988412857056,
-        5.5: 0.3060573786497116, 6.0: 0.3210875988006592, 6.5: 0.33544503152370453,
-        7.0: 0.3492126762866974, 7.5: 0.362457737326622, 8.0: 0.37523558735847473,
-        8.5: 0.38759241108516856, 9.0: 0.39956727623939514, 9.5: 0.4111935495172506,
-        10.0: 0.4225000143051148, 10.5: 0.4329264134104144, 11.0: 0.443107545375824,
-        11.5: 0.4530599538719858, 12.0: 0.46279838681221, 12.5: 0.4723360780626535,
-        13.0: 0.4816849529743195, 13.5: 0.4908558102324605, 14.0: 0.4998584389686584,
-        14.5: 0.5087017565965652, 15.0: 0.517393946647644, 15.5: 0.5259425118565559,
-        16.0: 0.5343543291091919, 16.5: 0.5426357612013817, 17.0: 0.5507926940917969,
-        17.5: 0.5588305993005633, 18.0: 0.5667545199394226, 18.5: 0.574569147080183,
-        19.0: 0.5822789072990417, 19.5: 0.5898879119195044, 20.0: 0.5974000096321106,
-        20.5: 0.6048236563801765, 21.0: 0.6121572852134705, 21.5: 0.6194041110575199,
-        22.0: 0.6265671253204346, 22.5: 0.633649181574583, 23.0: 0.6406529545783997,
-        23.5: 0.6475809663534164, 24.0: 0.654435634613037, 24.5: 0.6612192690372467,
-        25.0: 0.667934000492096, 25.5: 0.6745819002389908, 26.0: 0.6811649203300476,
-        26.5: 0.6876849085092545, 27.0: 0.6941436529159546, 27.5: 0.7005428969860077,
-        28.0: 0.7068842053413391, 28.5: 0.7131690979003906, 29.0: 0.719399094581604,
-        29.5: 0.7255756109952927, 30.0: 0.7317000031471252, 30.5: 0.7347410172224045,
-        31.0: 0.7377694845199585, 31.5: 0.740785576403141, 32.0: 0.7437894344329834,
-        32.5: 0.7467812150716782, 33.0: 0.7497610449790955, 33.5: 0.7527291029691696,
-        34.0: 0.7556855082511902, 34.5: 0.7586303651332855, 35.0: 0.7615638375282288,
-        35.5: 0.7644860669970512, 36.0: 0.7673971652984619, 36.5: 0.7702972739934921,
-        37.0: 0.7731865048408508, 37.5: 0.7760649472475052, 38.0: 0.7789327502250671,
-        38.5: 0.78179006, 39.0: 0.78463697, 39.5: 0.78747358,
-        40.0: 0.79030001, 40.5: 0.79280001, 41.0: 0.79530001,
-        41.5: 0.79780001, 42.0: 0.8003, 42.5: 0.8028,
-        43.0: 0.8053, 43.5: 0.8078, 44.0: 0.81029999,
-        44.5: 0.81279999, 45.0: 0.81529999,
-    }
-    # cpm_step = cpm_step_lut[(level // 10) * 10]
-    # cpm_step
-    cp_multiplier = cmp_lut[level]
-
-    # https://gamepress.gg/pokemongo/cp-multiplier
-    # https://gamepress.gg/pokemongo/pokemon-stats-advanced#:~:text=Calculating%20CP,*%20CP_Multiplier%5E2)%20%2F%2010
-    a, d, s = attack, defense, stamina
-
-    adjusted = {
-        'attack': a * cp_multiplier,
-        'defense': d * cp_multiplier,
-        'stamina': int(s * cp_multiplier),
-    }
-    cp = int(a * (d ** 0.5) * (s ** 0.5) * (cp_multiplier ** 2) / 10)
-    return cp, adjusted
-
-
-# class Moves():
-#     def __init__(moves):
-#         pass
-#     pass
 
 
 class Pokemon(ub.NiceRepr):
     """
 
     Example:
-        import sys, ubelt
-        sys.path.append(ubelt.expandpath('~/misc/pkmn'))
-        from query_team_builder import *  # NOQA
-        self = Pokemon('weedle')
-
-        list(self.family())
-
+        >>> from pypogo.pokemon import *  # NOQA
+        >>> self = Pokemon('weedle', level=20, ivs=(0, 1, 10))
+        >>> print('self = {}'.format(self))
+        self = <Pokemon(weedle, 183, 20, (0, 1, 10), None)>
+        >>> family = list(self.family())
+        >>> print('family = {}'.format(ub.repr2(family, nl=1, si=1)))
+        family = [
+            <Pokemon(beedrill, 907, 20, (0, 1, 10), None)>,
+            <Pokemon(kakuna, 168, 20, (0, 1, 10), None)>,
+        ]
     """
     def __init__(self, name, ivs=None, level=None, moves=None, shadow=False,
                  form='Normal', cp=None, autobuild=True, shiny=False,
@@ -152,22 +96,40 @@ class Pokemon(ub.NiceRepr):
         return new
 
     def display_name(self):
-        parts = [self.name]
+
+        use_emoji = True
+        if use_emoji:
+            glpyhs = {
+                'shadow': '😈',
+                'purified': '👼',
+                'shiny': '✨',
+            }
+        else:
+            glpyhs = {
+                'shadow': 'shadow',
+                'purified': 'purified',
+                'shiny': 'shiny',
+            }
+
+        aux_parts = []
         if self.shadow:
-            shadow_glyph = '😈'
-            parts.append(shadow_glyph)
+            shadow_glyph = glpyhs['shadow']
+            aux_parts.append(shadow_glyph)
 
         elif self.form not in {'Normal', 'Shadow', 'Purified'}:
-            parts.append('({})'.format(self.form))
+            aux_parts.append('({})'.format(self.form))
 
         if self.form == 'Purified':
-            purified_glyph = '👼'
-            parts.append(purified_glyph)
+            purified_glyph = glpyhs['purified']
+            aux_parts.append(purified_glyph)
 
         if self.shiny:
-            shiny_glpyh = '✨'
-            parts.append(shiny_glpyh)
-        disp_name = ''.join(parts)
+            shiny_glpyh = glpyhs['shiny']
+            aux_parts.append(shiny_glpyh)
+        if aux_parts:
+            disp_name = self.name + '(' + ','.join(aux_parts) + ')'
+        else:
+            disp_name = self.name
         return disp_name
 
     def __nice__(self):
@@ -182,7 +144,6 @@ class Pokemon(ub.NiceRepr):
 
     def populate_level(self, max_level=45):
         """ Try and find the level given the info """
-        import numpy as np
         # hacky, could be more elegant
         target_cp = self.cp
         iva, ivd, ivs = self.ivs
@@ -235,8 +196,10 @@ class Pokemon(ub.NiceRepr):
             >>> self = Pokemon('ralts', ivs=[6, 13, 15], level=20,
             >>>                 shadow=True, shiny=True)
             >>> new = self.purify()
-            >>> print('self = {!r}'.format(self))
-            >>> print('new  = {!r}'.format(new))
+            >>> print('self = {}'.format(self))
+            >>> print('new  = {}'.format(new))
+            self = <Pokemon(ralts😈✨, 274, 20, [6, 13, 15], None)>
+            new  = <Pokemon(ralts👼✨, 285, 20, (8, 15, 15), None)>
         """
         if not self.shadow:
             raise Exception('Only can purify shadow pokemon')
@@ -274,7 +237,6 @@ class Pokemon(ub.NiceRepr):
             list(self.family(onlyadj=True))
             list(self.family())
         """
-        import networkx as nx
         blocklist = set()
         if not node:
             blocklist.add(self.name)
@@ -328,7 +290,6 @@ class Pokemon(ub.NiceRepr):
         self = Pokemon('magikarp', ivs=[6, 13, 15])
         self.check_evolution_cps()
         """
-        import numpy as np
         evos = list(self.family(ancestors=False))
 
         if len(evos) == 0:
@@ -368,12 +329,21 @@ class Pokemon(ub.NiceRepr):
         else:
             rows = []
             for haves in have_ivs:
+
+                if isinstance(haves, Pokemon) or type(haves).__name__ == 'Pokemon':
+                    pkmn = haves
+                    ivs = pkmn.ivs
+                    name = pkmn.display_name()
+                else:
+                    ivs = haves
+                    name = self.name
+
                 # ultra_row = ultra_df.loc[haves]
-                leage_row = leage_df.loc[haves]
+                leage_row = leage_df.loc[ivs]
                 rows.append({
-                    'iva': haves[0],
-                    'ivd': haves[1],
-                    'ivs': haves[2],
+                    'iva': ivs[0],
+                    'ivd': ivs[1],
+                    'ivs': ivs[2],
                     'rank': leage_row['rank'],
                     'level': leage_row['level'],
                     'cp': leage_row['cp'],
@@ -382,14 +352,15 @@ class Pokemon(ub.NiceRepr):
                     'defense': leage_row['defense'],
                     'stamina': leage_row['stamina'],
                     'percent': leage_row['percent'],
+                    'name': name,
                 })
-            import pandas as pd
             rankings = pd.DataFrame.from_dict(rows)
             #
             print('')
             print('Leage {} Rankings'.format(max_cp))
             print('self = {!r}'.format(self))
             print(rankings.sort_values('rank'))
+            return rankings
 
     def find_leage_rankings(self, max_cp=1500, max_level=45):
         """
@@ -397,9 +368,6 @@ class Pokemon(ub.NiceRepr):
         adjusted stat product heuristic.
 
         Ignore:
-            >>> import sys, ubelt
-            >>> sys.path.append(ubelt.expandpath('~/misc/pkmn'))
-            >>> from query_team_builder import *  # NOQA
             >>> self = Pokemon('beedrill')
             >>> beedrill_df = self.find_leage_rankings(max_cp=1500)
 
@@ -501,32 +469,6 @@ class Pokemon(ub.NiceRepr):
             >>> Pokemon('sceptile').leage_rankings_for(have_ivs, max_cp=2500)
 
             >>> have_ivs = [
-            >>>     (0, 10, 15),
-            >>>     (1, 14, 11),
-            >>>     (11, 14, 13),
-            >>>     (12, 12, 13),
-            >>>     (14, 13, 13),
-            >>>     (2, 13, 12),
-            >>>     (2, 13, 15),
-            >>>     (2, 14, 14),
-            >>>     (2, 15, 14),
-            >>>     (3, 12, 11),
-            >>>     (3, 4, 15),
-            >>>     (3, 13, 14),
-            >>>     (3, 5, 2),
-            >>>     (4, 10, 13),
-            >>>     (4, 12, 15), # shadow
-            >>>     (5, 15, 12),
-            >>>     (7, 13, 15),
-            >>>     (7, 15, 8),
-            >>>     (15, 13, 15),
-            >>> ]
-            >>> Pokemon('gyarados').leage_rankings_for(have_ivs, max_cp=np.inf)
-            >>> Pokemon('gyarados').leage_rankings_for(have_ivs, max_cp=2500)
-            >>> Pokemon('gyarados').leage_rankings_for(have_ivs, max_cp=1500)
-
-
-            >>> have_ivs = [
             >>>     (14, 14, 15),
             >>>     (10, 14, 15),
             >>>     (15, 15, 15),
@@ -603,8 +545,6 @@ class Pokemon(ub.NiceRepr):
 
         """
         rows = []
-        import itertools as it
-        import numpy as np
 
         for iva, ivd, ivs in it.product(range(16), range(16), range(16)):
             attack = self.info['base_attack'] + iva
@@ -635,9 +575,7 @@ class Pokemon(ub.NiceRepr):
             }
             rows.append(row)
 
-        import kwarray
-        df = kwarray.DataFrameArray.from_dict(rows)
-        df = df.pandas()
+        df = pd.DataFrame.from_dict(rows)
         df['stat_product'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
         df = df.sort_values('stat_product', ascending=False)
         df['rank'] = np.arange(1, len(df) + 1)
@@ -647,45 +585,19 @@ class Pokemon(ub.NiceRepr):
         df['percent'] = ((df['stat_product'] - min_) / (max_ - min_)) * 100
         return df
 
-    def calc_cp(self):
-        if self.level is None:
-            best_cp = 0
-            best_level = 0
-            # levels = [y + x for x in range(1, 45) for y in [0, 0.5]]
-            for level in range(1, 45):
-                iva, ivd, ivs = self.ivs
-                if iva is None:
-                    iva = 10
-                if ivd is None:
-                    ivd = 10
-                if ivs is None:
-                    ivs = 10
-                attack = self.info['base_attack'] + iva
-                defense = self.info['base_defense'] + ivd
-                stamina = self.info['base_stamina'] + ivs
-                cand_cp = calc_cp(attack, defense, stamina, level)
-                if cand_cp > 1500:
-                    break
-                best_cp = cand_cp
-                best_level = level
-                print('best_cp = {!r}'.format(best_cp))
-                print('best_level = {!r}'.format(best_level))
-
-        level = self.level
-        iva, ivd, ivs = self.ivs
-        attack = self.info['base_attack'] + iva
-        defense = self.info['base_defense'] + ivd
-        stamina = self.info['base_stamina'] + ivs
-        cp, adjusted = calc_cp(attack, defense, stamina, level)
-        return cp
-
     @classmethod
-    def from_pvpoke_row(cls, row):
+    def from_pvpoke_row(Pokemon, row):
         """
+        Atempt to build a pokemon object from the format used by pvpoke.com
+
+        References:
+            https://pvpoke.com/team-builder/
+
         Example:
-            from query_team_builder import *  # NOQA
-            row = 'victreebel_shadow-shadow,RAZOR_LEAF,LEAF_BLADE,FRUSTRATION,22.5,4,14,14'
-            self = Pokemon.from_pvpoke_row(row)
+            >>> from pypogo.pokemon import *  # NOQA
+            >>> row_line = 'victreebel_shadow-shadow,RAZOR_LEAF,LEAF_BLADE,FRUSTRATION,22.5,4,14,14'
+            >>> row = row_line.split(',')
+            >>> self = Pokemon.from_pvpoke_row(row)
         """
         name = row[0]
         shadow = False
@@ -712,7 +624,11 @@ class Pokemon(ub.NiceRepr):
         idx += 1
         if idx < len(row):
             ivs = list(map(int, row[idx:]))
-        self = cls(name, level, ivs, moves, shadow=shadow)
+
+        if ivs == [None, None, None]:
+            ivs = None
+
+        self = Pokemon(name, level=level, ivs=ivs, moves=moves, shadow=shadow)
         return self
 
     def to_pvpoke_url(self):
@@ -768,3 +684,69 @@ class Pokemon(ub.NiceRepr):
         #     pass
         code = '-'.join(parts)
         return code
+
+
+def calc_cp(attack, defense, stamina, level):
+    """
+    References:
+        https://www.dragonflycave.com/pokemon-go/stats
+    """
+    # cpm_step_lut = {
+    #     0: 0.009426125469,
+    #     10: 0.008919025675,
+    #     20: 0.008924905903,
+    #     30: 0.00445946079,
+    # }
+    cmp_lut = {
+        1: 0.09399999678134918, 1.5: 0.1351374313235283, 2.0: 0.16639786958694458,
+        2.5: 0.1926509141921997, 3.0: 0.21573247015476227, 3.5: 0.23657265305519104,
+        4.0: 0.2557200491428375, 4.5: 0.27353037893772125, 5.0: 0.29024988412857056,
+        5.5: 0.3060573786497116, 6.0: 0.3210875988006592, 6.5: 0.33544503152370453,
+        7.0: 0.3492126762866974, 7.5: 0.362457737326622, 8.0: 0.37523558735847473,
+        8.5: 0.38759241108516856, 9.0: 0.39956727623939514, 9.5: 0.4111935495172506,
+        10.0: 0.4225000143051148, 10.5: 0.4329264134104144, 11.0: 0.443107545375824,
+        11.5: 0.4530599538719858, 12.0: 0.46279838681221, 12.5: 0.4723360780626535,
+        13.0: 0.4816849529743195, 13.5: 0.4908558102324605, 14.0: 0.4998584389686584,
+        14.5: 0.5087017565965652, 15.0: 0.517393946647644, 15.5: 0.5259425118565559,
+        16.0: 0.5343543291091919, 16.5: 0.5426357612013817, 17.0: 0.5507926940917969,
+        17.5: 0.5588305993005633, 18.0: 0.5667545199394226, 18.5: 0.574569147080183,
+        19.0: 0.5822789072990417, 19.5: 0.5898879119195044, 20.0: 0.5974000096321106,
+        20.5: 0.6048236563801765, 21.0: 0.6121572852134705, 21.5: 0.6194041110575199,
+        22.0: 0.6265671253204346, 22.5: 0.633649181574583, 23.0: 0.6406529545783997,
+        23.5: 0.6475809663534164, 24.0: 0.654435634613037, 24.5: 0.6612192690372467,
+        25.0: 0.667934000492096, 25.5: 0.6745819002389908, 26.0: 0.6811649203300476,
+        26.5: 0.6876849085092545, 27.0: 0.6941436529159546, 27.5: 0.7005428969860077,
+        28.0: 0.7068842053413391, 28.5: 0.7131690979003906, 29.0: 0.719399094581604,
+        29.5: 0.7255756109952927, 30.0: 0.7317000031471252, 30.5: 0.7347410172224045,
+        31.0: 0.7377694845199585, 31.5: 0.740785576403141, 32.0: 0.7437894344329834,
+        32.5: 0.7467812150716782, 33.0: 0.7497610449790955, 33.5: 0.7527291029691696,
+        34.0: 0.7556855082511902, 34.5: 0.7586303651332855, 35.0: 0.7615638375282288,
+        35.5: 0.7644860669970512, 36.0: 0.7673971652984619, 36.5: 0.7702972739934921,
+        37.0: 0.7731865048408508, 37.5: 0.7760649472475052, 38.0: 0.7789327502250671,
+        38.5: 0.78179006, 39.0: 0.78463697, 39.5: 0.78747358,
+        40.0: 0.79030001, 40.5: 0.79280001, 41.0: 0.79530001,
+        41.5: 0.79780001, 42.0: 0.8003, 42.5: 0.8028,
+        43.0: 0.8053, 43.5: 0.8078, 44.0: 0.81029999,
+        44.5: 0.81279999, 45.0: 0.81529999,
+    }
+    # cpm_step = cpm_step_lut[(level // 10) * 10]
+    # cpm_step
+    cp_multiplier = cmp_lut[level]
+
+    # https://gamepress.gg/pokemongo/cp-multiplier
+    # https://gamepress.gg/pokemongo/pokemon-stats-advanced#:~:text=Calculating%20CP,*%20CP_Multiplier%5E2)%20%2F%2010
+    a, d, s = attack, defense, stamina
+
+    adjusted = {
+        'attack': a * cp_multiplier,
+        'defense': d * cp_multiplier,
+        'stamina': int(s * cp_multiplier),
+    }
+    cp = int(a * (d ** 0.5) * (s ** 0.5) * (cp_multiplier ** 2) / 10)
+    return cp, adjusted
+
+
+# class Moves():
+#     def __init__(moves):
+#         pass
+#     pass

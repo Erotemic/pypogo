@@ -1,2 +1,4 @@
 ubelt
 networkx
+numpy
+pandas

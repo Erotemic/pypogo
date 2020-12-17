@@ -10,6 +10,19 @@ def normalize(n):
 class PogoAPI(ub.NiceRepr):
     """
     Object to help with access to data from pogoapi.net
+
+    Example:
+        >>> from pypogo.pogo_api import *  # NOQA
+        >>> api = PogoAPI()
+        >>> name = 'machamp-shadow'
+        >>> print(ub.repr2(api.get_info(name)))
+        >>> form = None
+        >>> name = 'beedrill'
+        >>> print(ub.repr2(api.get_info(name)))
+        >>> name = 'farfetchd_galarian'
+        >>> print(ub.repr2(api.get_info(name)))
+        >>> name = 'stunfisk_galarian'
+        >>> print(ub.repr2(api.get_info(name)))
     """
     def __init__(api):
         api.base = 'https://pogoapi.net/api/v1/'
@@ -63,9 +76,6 @@ class PogoAPI(ub.NiceRepr):
                     v = evo['pokemon_name'].lower()
                     evo_graph.add_edge(u, v)
 
-        # if 0:
-        #     print(forest_str(evo_graph))
-
         api.name_to_family = {}
         api.name_to_base = {}
         evo_graph.remove_edges_from(nx.selfloop_edges(evo_graph))
@@ -77,20 +87,7 @@ class PogoAPI(ub.NiceRepr):
                 api.name_to_family[n] = cc
                 api.name_to_base[n] = base
 
-        # base_pokmeon = [n for n in evo_graph.nodes if len(evo_graph.pred[n]) == 0]
         api.name_to_evolutions = _name_to_evolutions
-
-        # api.name_to_family = {}
-        # for base in base_pokmeon:
-        #     family = list(nx.dfs_postorder_nodes(evo_graph, base))
-        #     for name in family:
-        #         api.name_to_family[name] = family
-        #         evos = api.name_to_evolutions[name]
-        #         for evo in evos:
-        #             evo['base'] = base
-
-        #     for evo in evos['evolutions']:
-        #         evo['base']
 
         api.learnable = {
             'stunfisk_galarian': {
@@ -137,16 +134,6 @@ class PogoAPI(ub.NiceRepr):
 
     def get_info(api, name, form=None):
         """
-        api = PogoAPI()
-        name = 'machamp-shadow'
-        print(ub.repr2(api.get_info(name)))
-        form = None
-        name = 'beedrill'
-        print(ub.repr2(api.get_info(name)))
-        name = 'farfetchd_galarian'
-        print(ub.repr2(api.get_info(name)))
-        name = 'stunfisk_galarian'
-        print(ub.repr2(api.get_info(name)))
         """
         try:
             name_, form_ = api.normalize_name_and_form(name, form)
@@ -197,4 +184,6 @@ class PogoAPI(ub.NiceRepr):
         return info
 
 
+# HACK: Make a global API variable
+# we should likey do some lazy initialization or something better
 api = PogoAPI()

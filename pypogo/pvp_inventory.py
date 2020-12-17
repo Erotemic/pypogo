@@ -2,7 +2,7 @@
 Temporary place for my personal PVP pokemon inventory
 """
 import ubelt as ub
-from pypogo import Pokemon
+from pypogo.pokemon import Pokemon
 
 
 def pvp_inventory():
@@ -112,10 +112,56 @@ def pvp_inventory():
         Pokemon('Medicham', (15, 15, 10), cp=966),
     ]
 
-    for self in inventory:
-        list(self.family())
+    inventory = [
+        Pokemon('Electabuzz', (12, 14, 15), cp=2000),
+        Pokemon('Electabuzz', (10, 15, 14), cp=1558),
+        Pokemon('Electabuzz', (14, 13, 14), cp=1711),
+        Pokemon('Electabuzz', (12, 14, 14), cp=1307),
+        Pokemon('Electabuzz', (4, 14, 14), cp=754),
+        Pokemon('Electabuzz', (1, 15, 15), cp=30),
+        Pokemon('Electabuzz', (1, 4, 7), cp=464, shadow=True),
+        Pokemon('Electivire', (0, 11, 11), cp=2436),
+        Pokemon('Electivire', (5, 9, 12), cp=2312),
+        Pokemon('Electivire', (4, 13, 14), cp=659),
+    ]
 
-    candidates = list(ub.flatten(list(pkmn.family(ancestors=False)) for pkmn in inventory)) + inventory
+    inventory = [Pokemon('Gyarados', ivs=ivs) for ivs in [
+        (0, 10, 15),
+        (1, 14, 11),
+        (2, 13, 12),
+        (2, 15, 14),
+        (7, 13, 15),
+        (11, 14, 13),
+        (12, 12, 13),
+        (14, 13, 13),
+        (15, 13, 15),
+        (2, 13, 15),
+    ]]
+    inventory += [
+        Pokemon('Gyarados', ivs=(4, 12, 15), shadow=True),
+        Pokemon('Magikarp', ivs=(3, 5, 2), shiny=True, cp=55),
+    ]
+
+    inventory = [
+        Pokemon('Mudkip', (11, 13, 12), shadow=True, cp=242),
+        Pokemon('Mudkip', (4, 13, 9), shadow=True, cp=227),
+        Pokemon('Mudkip', (4, 2, 13), cp=747),
+        Pokemon('Mudkip', (13, 14, 13), cp=628),
+        Pokemon('Mudkip', (12, 13, 15), cp=625),
+        Pokemon('Mudkip', (13, 14, 11), cp=624),
+        Pokemon('Mudkip', (10, 13, 12), cp=609),
+        Pokemon('Mudkip', (11, 11, 12), cp=608),
+        Pokemon('Mudkip', (15, 12, 13), cp=48),
+        Pokemon('Marshtomp', (14, 14, 10), cp=1141),
+        Pokemon('Swampert', (0, 2, 14), cp=1526),
+        Pokemon('Swampert', (13, 14, 13), cp=2467),
+    ]
+
+    # for self in inventory:
+    #     list(self.family())
+
+    candidates = list(ub.flatten(list(pkmn.family(ancestors=False, node=True))
+                                 for pkmn in inventory))
 
     groups = ub.group_items(candidates, key=lambda p: p.name)
 
@@ -127,7 +173,9 @@ def pvp_inventory():
     }
 
     max_level = 45  # for XL candy
-    max_level = 40  # normal
+    # max_level = 40  # normal
+
+    all_dfs = []
 
     for name, group in groups.items():
         print('\n\n------------\n\n')
@@ -142,7 +190,23 @@ def pvp_inventory():
             have_ivs = [p.ivs for p in group if p.cp is None or p.cp <= max_cp]
             if len(have_ivs) > 0:
                 first = ub.peek(group)
-                first.leage_rankings_for(have_ivs, max_cp=max_cp,
-                                         max_level=max_level)
+                have_ivs = group
+                df = first.leage_rankings_for(have_ivs, max_cp=max_cp,
+                                              max_level=max_level)
+                all_dfs.append(df)
             else:
                 print('none eligable')
+
+    # Print out the best ranks for each set of IVS over all possible forms
+    # (lets you know which ones can be transfered safely)
+
+    iv_to_rank = ub.ddict(list)
+    for df in all_dfs:
+        if df is not None:
+            df = df.set_index(['iva', 'ivd', 'ivs'])
+            for iv, rank in zip(df.index, df['rank']):
+                iv_to_rank[iv].append(rank)
+
+    iv_to_best_rank = ub.map_vals(sorted, iv_to_rank)
+    iv_to_best_rank = ub.sorted_vals(iv_to_best_rank)
+    print('iv_to_best_rank = {}'.format(ub.repr2(iv_to_best_rank, nl=1, align=':')))

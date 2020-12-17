@@ -103,13 +103,6 @@ def main():
             cand = Pokemon.from_pvpoke_row(row)
             candidates.append(cand)
 
-    # for self in candidates:
-    #     self.populate_stats()
-
-    # for self in candidates:
-    #     print('self = {!r}'.format(self))
-    #     print(self.calc_cp())
-
     print(ub.repr2(api.learnable))
 
     if mode == 'ultra':
