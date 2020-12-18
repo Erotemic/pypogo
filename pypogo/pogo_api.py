@@ -122,7 +122,7 @@ class PogoAPI(ub.NiceRepr):
             if form == 'Normal':
                 form = 'Galarian'  # hack
             # else:
-            #     assert form == 'Galarian', f'{api}, {name}'
+            #     assert form == 'Galarian', '{}, {}'.format(api, name)
             name = name.split('_galarian')[0]
 
         if name == 'farfetchd':
@@ -139,7 +139,7 @@ class PogoAPI(ub.NiceRepr):
         try:
             name_, form_ = api.normalize_name_and_form(name, form)
         except Exception:
-            raise Exception(f'name={name}, form={form}')
+            raise Exception('name={name}, form={form}'.format(**locals())
 
         try:
             infos = [
@@ -148,7 +148,8 @@ class PogoAPI(ub.NiceRepr):
                 api.name_to_evolutions[name_],
             ]
         except Exception:
-            raise Exception(f'name={name}, form={form}, name_={name_}, form_={form_}')
+            raise Exception(
+                'name={name}, form={form}, name_={name_}, form_={form_}'.format(**locals()))
 
         info = {}
         for all_infos in infos:
