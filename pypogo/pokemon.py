@@ -198,8 +198,8 @@ class Pokemon(ub.NiceRepr):
             >>> new = self.purify()
             >>> print('self = {}'.format(self))
             >>> print('new  = {}'.format(new))
-            self = <Pokemon(ralts😈✨, 274, 20, [6, 13, 15], None)>
-            new  = <Pokemon(ralts👼✨, 285, 20, (8, 15, 15), None)>
+            self = <Pokemon(ralts(😈,✨), 274, 20, [6, 13, 15], None)>
+            new  = <Pokemon(ralts(👼,✨), 285, 20, (8, 15, 15), None)>
         """
         if not self.shadow:
             raise Exception('Only can purify shadow pokemon')
@@ -633,7 +633,14 @@ class Pokemon(ub.NiceRepr):
 
     def to_pvpoke_url(self):
         parts = []
-        parts.append(self.name)
+
+        name = self.name.replace('’', '')
+
+        if self.form == 'Alola':
+            parts.append(name + '_alolan')
+        else:
+            parts.append(name)
+
         if self.level is not None:
             parts.append(str(self.level))
 
@@ -659,6 +666,15 @@ class Pokemon(ub.NiceRepr):
             }
             cm1 = fixup.get(cm1, cm1)
             cm2 = fixup.get(cm2, cm2)
+
+            # Check if a shadow variant exists to ensure the move index is right on pvpoke
+            if not self.shadow:
+                if self.form not in {'Alola', 'Galarian'}:
+                    has_shadow = any(item['form'] == 'Shadow' for item in api.name_to_stats[self.name])
+                    if has_shadow:
+                        if 'RETURN' not in api.learnable[self.name]['charge']:
+                            api.learnable[self.name]['charge'].append('RETURN')
+                            api.learnable[self.name]['charge'] = sorted(api.learnable[self.name]['charge'])
 
             fm_idx = api.learnable[self.name]['fast'].index(fm)
             cm1_idx = api.learnable[self.name]['charge'].index(cm1) + 1

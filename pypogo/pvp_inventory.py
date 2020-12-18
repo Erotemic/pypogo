@@ -141,6 +141,7 @@ def pvp_inventory():
         Pokemon('Gyarados', ivs=(4, 12, 15), shadow=True),
         Pokemon('Magikarp', ivs=(3, 5, 2), shiny=True, cp=55),
     ]
+    rank_inventory(inventory)
 
     inventory = [
         Pokemon('Mudkip', (11, 13, 12), shadow=True, cp=242),
@@ -186,13 +187,45 @@ def pvp_inventory():
     ]
 
     inventory = [
-        Pokemon('Ferroseed', (12, 12, 11), cp=516),
+        Pokemon('Ferroseed', (13, 13, 11), cp=516),
         Pokemon('Ferroseed', (10, 13, 13), cp=377),
-        Pokemon('Ferroseed', (14, 14, 13), cp=529),
+        Pokemon('Ferroseed', (14, 14, 13), cp=526),
+    ]
+
+    inventory = [
+        Pokemon('Makuhita', (9, 15, 14), cp=127),
+        Pokemon('Makuhita', (4, 13, 10), cp=389),
+        Pokemon('Makuhita', (12, 13, 14), cp=357),
+        Pokemon('Makuhita', (9, 15, 14), cp=127),
+        Pokemon('Hariyama', (7, 7, 13), cp=1956),
     ]
     # for self in inventory:
     #     list(self.family())
 
+    inventory = [
+        Pokemon('Sableye', (11, 13, 15), cp=278),
+        Pokemon('Sableye', (3, 11, 7), cp=294, shadow=True),
+        Pokemon('Sableye', (15, 10, 14), cp=20),
+        Pokemon('Sableye', (13, 13, 15), cp=620),
+        Pokemon('Sableye', (13, 10, 14), cp=816),
+    ]
+
+    inventory = [
+        Pokemon('machop', (15, 15, 14), cp=910),
+        Pokemon('machop', (15, 15, 14), cp=437),
+        Pokemon('machop', (15, 14, 11), cp=359),
+        Pokemon('machop', (8, 12, 12), cp=442, shadow=True),
+        Pokemon('machoke', (1, 11, 0), cp=1480),
+        Pokemon('machamp', (13, 15, 15), cp=3032),
+        Pokemon('machamp', (14, 14, 12), cp=1722),
+        Pokemon('machamp', (13, 12, 14), cp=1713),
+        Pokemon('machamp', (11, 14, 15), cp=1713),
+        Pokemon('machamp', (5, 11, 10), cp=1474, shadow=True),
+    ]
+    rank_inventory(inventory)
+
+
+def rank_inventory(inventory):
     candidates = list(ub.flatten(list(pkmn.family(ancestors=False, node=True))
                                  for pkmn in inventory))
 
@@ -219,7 +252,7 @@ def pvp_inventory():
             print(' ========== ')
             print(' --- {} in {} --- '.format(name, leage_name))
             not_eligible = [p for p in group if p.cp is not None and p.cp > max_cp]
-            eligible = [p for p in group if p.cp is not None and p.cp <= max_cp]
+            eligible = [p for p in group if p.cp is None or p.cp <= max_cp]
             print('not_eligible = {!r}'.format(not_eligible))
             if len(eligible) > 0:
                 first = ub.peek(eligible)

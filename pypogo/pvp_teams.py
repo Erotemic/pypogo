@@ -59,7 +59,8 @@ zweilous,DRAGON_BREATH,BODY_SLAM,DARK_PULSE
 
 
 def main():
-    mode = 'great'
+    candidates = None
+    mode = 'ultra'
     if mode == 'great':
         candidate_csv_text = ub.codeblock(
             '''
@@ -81,7 +82,7 @@ def main():
             # machamp-shadow,COUNTER,ROCK_SLIDE,CROSS_CHOP,18,5,11,10
             victreebel_shadow-shadow,RAZOR_LEAF,LEAF_BLADE,FRUSTRATION,22.5,4,14,14
             ''')
-    elif mode == 'ultra':
+    if mode == 'ultra':
         candidate_csv_text = ub.codeblock(
             '''
             cresselia,PSYCHO_CUT,MOONBLAST,FUTURE_SIGHT
@@ -90,23 +91,35 @@ def main():
             swampert,MUD_SHOT,MUDDY_WATER,EARTHQUAKE
             venusaur,VINE_WHIP,FRENZY_PLANT,SLUDGE_BOMB
             ''')
-    else:
-        raise KeyError(mode)
 
-    candidates = []
-    for line in candidate_csv_text.split('\n'):
-        line = line.strip()
-        if line.startswith('#'):
-            continue
-        if line:
-            row = line.split(',')
-            cand = Pokemon.from_pvpoke_row(row)
-            candidates.append(cand)
+        candidates = [
+            Pokemon('Gengar', (7, 14, 14), cp=2500, moves=['SHADOW_CLAW', 'SHADOW_PUNCH', 'SHADOW_BALL']),
+            Pokemon('Togekiss', (15, 15, 14), cp=2469, moves=['CHARM', 'FLAMETHROWER', 'AERIAL_ACE']),
+            Pokemon('Venusaur', (15, 13, 13), cp=2482, moves=['VINE_WHIP', 'FRENZY_PLANT', 'SLUDGE_BOMB']),
+            Pokemon('Muk', (9, 7, 4), cp=2486, form='Alola', moves=['SNARL', 'DARK_PULSE', 'SLUDGE_WAVE']),
+            Pokemon('Swampert', (0, 2, 14), cp=2500, moves=['WATER_GUN', 'HYDRO_CANNON', 'SLUDGE_WAVE']),
+            Pokemon('Empoleon', (0, 10, 14), cp=2495, moves=['WATERFALL', 'HYDRO_CANNON', 'DRILL_PECK']),
+            Pokemon('sirfetch’d', (4, 11, 12), cp=2485, form='Galarian', moves=['COUNTER', 'CLOSE_COMBAT', 'LEAF_BLADE']),
+        ]
+    # else:
+    #     raise KeyError(mode)
+
+    if candidates is None:
+        candidates = []
+        for line in candidate_csv_text.split('\n'):
+            line = line.strip()
+            if line.startswith('#'):
+                continue
+            if line:
+                row = line.split(',')
+                cand = Pokemon.from_pvpoke_row(row)
+                candidates.append(cand)
 
     print(ub.repr2(api.learnable))
 
     if mode == 'ultra':
         base = 'https://pvpoke.com/team-builder/all/2500'
+        base = 'https://pvpoke.com/team-builder/premier/2500'
     elif mode == 'great':
         base = 'https://pvpoke.com/team-builder/all/1500'
     sep = '%2C'
@@ -115,10 +128,10 @@ def main():
     for team in it.combinations(candidates, 3):
         # if not any('registeel' in p.name for p in team):
         #     continue
-        if not any('victree' in p.name for p in team):
-            continue
-        if len(set(p.name for p in team)) != 3:
-            continue
+        # if not any('victree' in p.name for p in team):
+        #     continue
+        # if len(set(p.name for p in team)) != 3:
+        #     continue
         suffix = sep.join([p.to_pvpoke_url() for p in team])
         url = base + '/' + suffix
         print(url)
