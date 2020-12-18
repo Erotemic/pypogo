@@ -8,6 +8,15 @@ The pypogo Module
 
 The ``pypogo`` module.
 
+The goal is a Python module to run Pokemon Go calculations and simulations.
+This module interfaces with ``https://pogoapi.net/api/v1/`` to obtain data like
+pokemon stats and stuff. It can currently do CP calculations, and check the
+rank of IVs based on the stats product of the mons at various levels.
+
+Battle simulation and other statistics like knowing the cost of powering up a
+particular mon to PVP level given its IV ranking would be interesting.
+
+
 +------------------+----------------------------------------------+
 | Read the docs    | https://pypogo.readthedocs.io                 |
 +------------------+----------------------------------------------+
