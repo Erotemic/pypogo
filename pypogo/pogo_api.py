@@ -139,7 +139,7 @@ class PogoAPI(ub.NiceRepr):
         try:
             name_, form_ = api.normalize_name_and_form(name, form)
         except Exception:
-            raise Exception('name={name}, form={form}'.format(**locals())
+            raise Exception('name={name}, form={form}'.format(**locals()))
 
         try:
             infos = [
