@@ -112,7 +112,8 @@ class PogoAPI(ub.NiceRepr):
             if form is None:
                 form = 'Shadow'
             else:
-                assert form == 'Shadow', f'{api}, {name}'
+                assert form == 'Shadow', '{}, {}'.format(api, name)
+
             name = name.split('-shadow')[0]
 
         if name.endswith('galarian'):
