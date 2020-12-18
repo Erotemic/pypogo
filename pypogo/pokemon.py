@@ -16,14 +16,15 @@ from pypogo.pogo_api import api
 
 class Pokemon(ub.NiceRepr):
     """
+    xdoctest ~/code/pypogo/pypogo/pokemon.py
 
     Example:
         >>> from pypogo.pokemon import *  # NOQA
         >>> self = Pokemon('weedle', level=20, ivs=(0, 1, 10))
         >>> print('self = {}'.format(self))
         self = <Pokemon(weedle, 183, 20, (0, 1, 10), None)>
-        >>> family = list(self.family())
-        >>> print('family = {}'.format(ub.repr2(family, nl=1, si=1)))
+        >>> family = sorted(self.family(), key=lambda p: p.name)
+        >>> print('family = {}'.format(ub.repr2(family, nl=1, si=1, sort=False)))
         family = [
             <Pokemon(beedrill, 907, 20, (0, 1, 10), None)>,
             <Pokemon(kakuna, 168, 20, (0, 1, 10), None)>,
