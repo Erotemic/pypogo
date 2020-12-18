@@ -1,7 +1,9 @@
 The pypogo Module
 ================
 
-|CircleCI| |Codecov| |Pypi| |Downloads| |ReadTheDocs|
+|CircleCI| 
+
+.. |Codecov| |Pypi| |Downloads| |ReadTheDocs|
 
 
 The ``pypogo`` module.
