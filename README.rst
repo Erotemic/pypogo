@@ -1,7 +1,7 @@
 The pypogo Module
 ================
 
-|CircleCI| |Travis| |GitlabCIPipeline| |GitlabCICoverage| |Appveyor| |Codecov| |Pypi| |Downloads| |ReadTheDocs|
+|CircleCI| |Codecov| |Pypi| |Downloads| |ReadTheDocs|
 
 
 The ``pypogo`` module.
