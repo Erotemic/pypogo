@@ -82,6 +82,28 @@ def main():
             # machamp-shadow,COUNTER,ROCK_SLIDE,CROSS_CHOP,18,5,11,10
             victreebel_shadow-shadow,RAZOR_LEAF,LEAF_BLADE,FRUSTRATION,22.5,4,14,14
             ''')
+
+        candidate_explicit = [
+            Pokemon('medicham', ivs=[7, 15, 14]).maximize(1368),
+            Pokemon('medicham', ivs=[7, 15, 14]).maximize(1500),
+            Pokemon('machamp', [1, 15, 6], cp=1493),
+            Pokemon('altaria', [1, 11, 8], cp=1496),
+            Pokemon('skarmory', [0, 15, 13], cp=1495),
+            Pokemon('umbreon', [1, 8, 8], cp=1495),
+            Pokemon('registeel', [10, 14, 15], cp=1487),
+        ]
+        for cand in candidate_explicit:
+            cand.populate_cp()
+        stat_products = [cand.stat_product for cand in candidate_explicit]
+        sortx = ub.argsort(stat_products)
+        candidate_explicit = list(ub.take(candidate_explicit, sortx))
+        stat_products = list(ub.take(stat_products, sortx))
+        print('stat_products = {}'.format(ub.repr2(stat_products, nl=1)))
+        print('candidate_explicit = {}'.format(ub.repr2(candidate_explicit, nl=1)))
+
+        for cand in candidate_explicit:
+            print('cand.adjusted = {}, {}'.format(ub.repr2(cand.adjusted, nl=0, precision=2), cand))
+
     if mode == 'ultra':
         candidate_csv_text = ub.codeblock(
             '''
@@ -100,6 +122,7 @@ def main():
             Pokemon('Swampert', (0, 2, 14), cp=2500, moves=['WATER_GUN', 'HYDRO_CANNON', 'SLUDGE_WAVE']),
             Pokemon('Empoleon', (0, 10, 14), cp=2495, moves=['WATERFALL', 'HYDRO_CANNON', 'DRILL_PECK']),
             Pokemon('sirfetch’d', (4, 11, 12), cp=2485, form='Galarian', moves=['COUNTER', 'CLOSE_COMBAT', 'LEAF_BLADE']),
+            Pokemon('dewgong', (15, 8, 15), cp=2500, form='Galarian', moves=['COUNTER', 'CLOSE_COMBAT', 'LEAF_BLADE']),
         ]
     # else:
     #     raise KeyError(mode)

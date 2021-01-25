@@ -34,7 +34,10 @@ class PogoAPI(ub.NiceRepr):
         }
         api.data = {}
         for key, url in api.routes.items():
-            data_fpath = ub.grabdata(url, verbose=1)
+
+            redo = 0
+            data_fpath = ub.grabdata(url, verbose=1, redo=redo)
+
             with open(data_fpath, 'r') as file:
                 data = json.load(file)
             api.data[key] = data

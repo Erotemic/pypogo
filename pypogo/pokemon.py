@@ -143,7 +143,7 @@ class Pokemon(ub.NiceRepr):
         possible_moves = api.name_to_moves[self.name]
         return possible_moves
 
-    def populate_level(self, max_level=45):
+    def populate_level(self, max_level=50):
         """ Try and find the level given the info """
         # hacky, could be more elegant
         target_cp = self.cp
@@ -166,12 +166,25 @@ class Pokemon(ub.NiceRepr):
             raise Exception('cp does not match ivs')
         else:
             self.level = found_level
+        return self
 
     def populate_stats(self):
         info = api.get_info(name=self.name, form=self.form)
         self.learnable = api.learnable[self.name]
         self.info = info
         # self.items = items
+        return self
+
+    def populate_cp(self):
+        level = self.level
+        iva, ivd, ivs = self.ivs
+        attack = self.info['base_attack'] + iva
+        defense = self.info['base_defense'] + ivd
+        stamina = self.info['base_stamina'] + ivs
+        cp, adjusted = calc_cp(attack, defense, stamina, level)
+        self.cp = cp
+        self.adjusted = adjusted
+        return self
 
     def evolved(self):
         """
@@ -269,18 +282,7 @@ class Pokemon(ub.NiceRepr):
                 if other.shadow:
                     yield other.purify()
 
-    def populate_cp(self):
-        level = self.level
-        iva, ivd, ivs = self.ivs
-        attack = self.info['base_attack'] + iva
-        defense = self.info['base_defense'] + ivd
-        stamina = self.info['base_stamina'] + ivs
-        cp, adjusted = calc_cp(attack, defense, stamina, level)
-        self.cp = cp
-        self.adjusted = adjusted
-        return cp, adjusted
-
-    def check_evolution_cps(self, max_cp=1500, max_level=45):
+    def check_evolution_cps(self, max_cp=1500, max_level=50):
         """
         self = Pokemon('gastly', ivs=[6, 13, 15])
         self.check_evolution_cps()
@@ -313,20 +315,82 @@ class Pokemon(ub.NiceRepr):
 
             print('To achieve other = {!r}'.format(other))
             self.level = best_level
-            cp, adjusted = self.populate_cp()
+            self.populate_cp()
             print('self = {!r}'.format(self))
             print('Pokemon CP must be less than this to be used in league')
-            print('cp = {!r}'.format(cp))
 
-    def leage_rankings_for(self, have_ivs, max_cp=1500, max_level=45):
-        """
-        Given a set of IVs for this pokemon compute the leage rankings
-        """
-        leage_df = self.find_leage_rankings(max_cp=max_cp, max_level=max_level)
-        leage_df = leage_df.set_index(['iva', 'ivd', 'ivs'])
+    @property
+    def stat_product(self):
+        product = self.adjusted['attack'] * self.adjusted['stamina'] * self.adjusted['defense']
+        return product
 
-        if abs(min(leage_df['cp'].max() - min(3000, max_cp), 0)) > 200:
-            print('Out of this leage {}'.format(max_cp))
+    def league_ranking(self, have_ivs=None, max_cp=1500, max_level=50, min_iv=0):
+        """
+        Given a set of IVs for this pokemon compute the league rankings
+
+        Example:
+
+            # When does a potential good XL medicham become better than non XL?
+
+            z = Pokemon('machamp', [1, 15, 6]).maximize(1500)
+            z.populate_cp()
+            z.stat_product
+            print('z = {!r}'.format(z))
+            print('z.stat_product = {!r}'.format(z.stat_product))
+
+            self = Pokemon('medicham', ivs=[7, 15, 14], cp=1368)
+            self.populate_cp()
+            print('self = {!r}'.format(self))
+            self.adjusted
+            print('self.adjusted = {!r}'.format(self.adjusted))
+            stat_product = self.stat_product
+            print('stat_product = {!r}'.format(stat_product))
+
+            m3 = Pokemon('medicham', ivs=[7, 15, 14], cp=1377)
+            m3.populate_cp()
+            print('m3 = {!r}'.format(m3))
+            m3.adjusted
+            print('m3.adjusted = {!r}'.format(m3.adjusted))
+            stat_product = m3.stat_product
+            print('stat_product = {!r}'.format(stat_product))
+
+            n = self.copy()
+            n.level += 0.5 * 4
+            n.cp = None
+            n.populate_cp()
+            print('n = {!r}'.format(n))
+            print('n.adjusted = {!r}'.format(n.adjusted))
+            stat_product1 = n.stat_product
+            print('stat_product1 = {!r}'.format(stat_product1))
+
+            y = self.copy().maximize(max_cp=1400, max_level=50)
+            print('y = {!r}'.format(y))
+            y.level += 0.5
+            y.cp = None
+            y.populate_cp()
+            print('y.adjusted = {!r}'.format(y.adjusted))
+            stat_product1 = y.stat_product
+            print('stat_product1 = {!r}'.format(stat_product1))
+
+            x = Pokemon('medicham', ivs=[13, 13, 13]).maximize(max_cp=1500, max_level=40)
+            n.populate_cp()
+            print('x = {!r}'.format(x))
+            stat_product2 = x.stat_product
+            print('x.adjusted = {!r}'.format(x.adjusted))
+            print('stat_product2 = {!r}'.format(stat_product2))
+
+
+        """
+        if have_ivs is None:
+            have_ivs = [self.ivs]
+
+        league_df = self.league_ranking_table(max_cp=max_cp,
+                                              max_level=max_level,
+                                              min_iv=min_iv)
+        league_df = league_df.set_index(['iva', 'ivd', 'ivs'])
+
+        if abs(min(league_df['cp'].max() - min(3000, max_cp), 0)) > 200:
+            print('Out of this league {}'.format(max_cp))
         else:
             rows = []
             for haves in have_ivs:
@@ -339,20 +403,21 @@ class Pokemon(ub.NiceRepr):
                     ivs = haves
                     name = self.name
 
+                ivs = tuple(ivs)
                 # ultra_row = ultra_df.loc[haves]
-                leage_row = leage_df.loc[ivs]
+                league_row = league_df.loc[ivs]
                 rows.append({
                     'iva': ivs[0],
                     'ivd': ivs[1],
                     'ivs': ivs[2],
-                    'rank': leage_row['rank'],
-                    'level': leage_row['level'],
-                    'cp': leage_row['cp'],
-                    'stat_product': leage_row['stat_product'],
-                    'attack': leage_row['attack'],
-                    'defense': leage_row['defense'],
-                    'stamina': leage_row['stamina'],
-                    'percent': leage_row['percent'],
+                    'rank': league_row['rank'],
+                    'level': league_row['level'],
+                    'cp': league_row['cp'],
+                    'stat_product': league_row['stat_product'],
+                    'attack': league_row['attack'],
+                    'defense': league_row['defense'],
+                    'stamina': league_row['stamina'],
+                    'percent': league_row['percent'],
                     'name': name,
                 })
             rankings = pd.DataFrame.from_dict(rows)
@@ -363,14 +428,47 @@ class Pokemon(ub.NiceRepr):
             print(rankings.sort_values('rank'))
             return rankings
 
-    def find_leage_rankings(self, max_cp=1500, max_level=45):
+    def maximize(self, max_cp=1500, max_level=50):
         """
-        Calculate the leage rankings for this pokemon's IVs, based on the
-        adjusted stat product heuristic.
+        Example:
+            self = Pokemon('dewgong', (15, 8, 15), moves=['ICE_SHARD', 'ICY_WIND', 'WATER_PULSE'])
+            self.maximize(max_cp=1500)
+        """
+        assert self.ivs is not None
+
+        iva, ivd, ivs = self.ivs
+
+        attack = self.info['base_attack'] + iva
+        defense = self.info['base_defense'] + ivd
+        stamina = self.info['base_stamina'] + ivs
+
+        best_level = None
+        best_cp = None
+        best_adjusted = None
+        for level in list(np.arange(1, max_level + 0.5, 0.5)):
+            cand_cp, adjusted = calc_cp(attack, defense, stamina, level)
+            if cand_cp <= max_cp:
+                best_cp = cand_cp
+                best_level = level
+                best_adjusted = adjusted
+            else:
+                break
+
+        if best_level is not None:
+            self.adjusted = best_adjusted
+            self.level = best_level
+            self.cp = best_cp
+
+        return self
+
+    def league_ranking_table(self, max_cp=1500, max_level=50, min_iv=0):
+        """
+        Calculate this Pokemon species' league rankings for all IV
+        combinations, based on the adjusted stat product heuristic.
 
         Ignore:
             >>> self = Pokemon('beedrill')
-            >>> beedrill_df = self.find_leage_rankings(max_cp=1500)
+            >>> beedrill_df = self.league_ranking_table(max_cp=1500)
 
             >>> # Find the best IVs that we have for PVP
             >>> self = Pokemon('empoleon')
@@ -410,7 +508,7 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 15, 15),
             >>>     (12, 15, 15),
             >>> ]
-            >>> self.leage_rankings_for(have_ivs)
+            >>> self.league_ranking(have_ivs)
 
             >>> have_ivs = [
             >>>     (4, 13, 10),
@@ -427,20 +525,20 @@ class Pokemon(ub.NiceRepr):
             >>> ]
             >>> self = Pokemon('gengar')
             >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
-            >>> self.leage_rankings_for(have_ivs)
+            >>> self.league_ranking(have_ivs)
 
             >>> self = Pokemon('haunter')
             >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
-            >>> self.leage_rankings_for(have_ivs)
+            >>> self.league_ranking(have_ivs)
 
             >>> have_ivs = [
             >>>     (12, 11, 14),
             >>>     (12, 15, 15),
             >>>     (15, 15, 15),
             >>> ]
-            >>> Pokemon('blaziken').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('blaziken').leage_rankings_for(have_ivs, max_cp=2500)
-            >>> Pokemon('blaziken').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('blaziken').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('blaziken').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('blaziken').league_ranking(have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (0, 2, 14),
@@ -454,9 +552,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (6, 15, 11),  # purified
             >>>     (13, 15, 14),  # purified
             >>> ]
-            >>> Pokemon('swampert').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('swampert').leage_rankings_for(have_ivs, max_cp=2500)
-            >>> Pokemon('swampert').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('swampert').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('swampert').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('swampert').league_ranking(have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (1, 2, 15),
@@ -466,8 +564,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (14, 13, 15),
             >>>     (15, 15, 10),
             >>> ]
-            >>> Pokemon('sceptile').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('sceptile').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('sceptile').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('sceptile').league_ranking(have_ivs, max_cp=2500)
 
             >>> have_ivs = [
             >>>     (14, 14, 15),
@@ -475,7 +573,7 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 15, 15),
             >>>     (15, 15, 15),
             >>> ]
-            >>> Pokemon('rhyperior').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('rhyperior').league_ranking(have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (14, 14, 14),
@@ -484,7 +582,7 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 13, 14),
             >>>     (8, 6, 8),
             >>> ]
-            >>> Pokemon('vigoroth').leage_rankings_for(have_ivs, max_cp=1500)
+            >>> Pokemon('vigoroth').league_ranking(have_ivs, max_cp=1500)
 
 
             >>> have_ivs = [
@@ -495,8 +593,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (7, 15, 15),
             >>>     (10, 15, 15),
             >>> ]
-            >>> Pokemon('shiftry').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('shiftry').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('shiftry').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('shiftry').league_ranking(have_ivs, max_cp=2500)
 
             >>> have_ivs = [
             >>>     (15, 15, 14),
@@ -507,8 +605,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 14, 14),
             >>>     (10, 14, 15),
             >>> ]
-            >>> Pokemon('alakazam').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('alakazam').leage_rankings_for(have_ivs, max_cp=2500)
+            >>> Pokemon('alakazam').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('alakazam').league_ranking(have_ivs, max_cp=2500)
 
             >>> have_ivs = [
             >>>     (0, 15, 6),
@@ -516,9 +614,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (12, 12, 11),
             >>>     (15, 10, 12),
             >>> ]
-            >>> Pokemon('salamence').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('salamence').leage_rankings_for(have_ivs, max_cp=2500)
-            >>> Pokemon('salamence').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('salamence').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('salamence').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('salamence').league_ranking(have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (6, 10, 10),
@@ -527,9 +625,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 15, 15),
             >>>     (15, 15, 5),
             >>> ]
-            >>> Pokemon('flygon').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('flygon').leage_rankings_for(have_ivs, max_cp=2500)
-            >>> Pokemon('flygon').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('flygon').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('flygon').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('flygon').league_ranking(have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (6, 11, 11),
@@ -539,15 +637,40 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 12, 15),
             >>>     (15, 7, 15),
             >>> ]
-            >>> Pokemon('mamoswine').leage_rankings_for(have_ivs, max_cp=1500)
-            >>> Pokemon('mamoswine').leage_rankings_for(have_ivs, max_cp=2500)
-            >>> Pokemon('mamoswine').leage_rankings_for(have_ivs, max_cp=np.inf)
+            >>> Pokemon('mamoswine').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('mamoswine').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('mamoswine').league_ranking(have_ivs, max_cp=np.inf)
 
+            >>> pd.options.display.max_rows = 100
+            >>> pd.options.display.min_rows = 40
+            >>> Pokemon('registeel').league_ranking_table(max_cp=1500, min_iv=10, max_level=40)
+            >>> Pokemon('registeel').league_ranking_table(max_cp=2500, min_iv=10, max_level=40)
+            >>> have_ivs = [
+            >>>     (10, 14, 15),
+            >>>     (14, 14, 12),
+            >>>     (13, 11, 15),
+            >>>     (12, 15, 15),
+            >>>     (13, 10, 15),
+            >>>     (14, 10, 12),
+            >>>     (14, 13, 10),
+            >>>     (12, 11, 15),
+            >>>     (11, 13, 15),
+            >>>     (12, 15, 10),
+            >>>     (11, 10, 14),
+            >>>     (11, 13, 11),
+            >>>     (13, 15, 10),
+            >>>     (15, 15, 11),
+            >>> ]
+            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=1500, min_iv=10, max_level=50)
+            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=2500, min_iv=10, max_level=50)
 
         """
         rows = []
+        iva_range = list(range(min_iv, 16))
+        ivd_range = list(range(min_iv, 16))
+        ivs_range = list(range(min_iv, 16))
 
-        for iva, ivd, ivs in it.product(range(16), range(16), range(16)):
+        for iva, ivd, ivs in it.product(iva_range, ivd_range, ivs_range):
             attack = self.info['base_attack'] + iva
             defense = self.info['base_defense'] + ivd
             stamina = self.info['base_stamina'] + ivs
@@ -746,6 +869,24 @@ def calc_cp(attack, defense, stamina, level):
         43.0: 0.8053, 43.5: 0.8078, 44.0: 0.81029999,
         44.5: 0.81279999, 45.0: 0.81529999,
     }
+
+    # POGO API doesn't have these, taken from gamepress.gg Not sure if they are
+    # right
+    cmp_lut.update({
+        45.5:    0.81779999,
+        46:      0.82029999,
+        46.5:    0.82279999,
+        47:      0.82529999,
+        47.5:    0.82779999,
+        48:      0.83029999,
+        48.5:    0.83279999,
+        49:      0.83529999,
+        49.5:    0.83779999,
+        50:      0.84029999,
+        50.5:    0.84279999,
+        51:      0.84529999,
+    })
+
     # cpm_step = cpm_step_lut[(level // 10) * 10]
     # cpm_step
     cp_multiplier = cmp_lut[level]
