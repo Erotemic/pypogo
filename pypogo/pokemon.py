@@ -434,8 +434,10 @@ class Pokemon(ub.NiceRepr):
             self = Pokemon('dewgong', (15, 8, 15), moves=['ICE_SHARD', 'ICY_WIND', 'WATER_PULSE'])
             self.maximize(max_cp=1500)
         """
-        assert self.ivs is not None
+        if self.ivs is None:
+            self.ivs = [15, 15, 15]
 
+        assert self.ivs is not None
         iva, ivd, ivs = self.ivs
 
         attack = self.info['base_attack'] + iva

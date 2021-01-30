@@ -84,13 +84,27 @@ def main():
             ''')
 
         candidate_explicit = [
-            Pokemon('medicham', ivs=[7, 15, 14]).maximize(1368),
+            Pokemon('medicham', ivs=[7, 15, 14], level=41.5),
+            Pokemon('medicham', ivs=[7, 15, 14], level=43.0),
             Pokemon('medicham', ivs=[7, 15, 14]).maximize(1500),
             Pokemon('machamp', [1, 15, 6], cp=1493),
             Pokemon('altaria', [1, 11, 8], cp=1496),
             Pokemon('skarmory', [0, 15, 13], cp=1495),
             Pokemon('umbreon', [1, 8, 8], cp=1495),
             Pokemon('registeel', [10, 14, 15], cp=1487),
+            Pokemon('stunfisk', [11, 14, 14], form='Galarian', cp=1498),
+            Pokemon('cresselia', [7, 14, 8], cp=1493),
+            Pokemon('vigoroth', [0, 10, 9], cp=1495),
+            Pokemon('drifblim', [4, 14, 13], cp=1498),
+            Pokemon('haunter', [6, 13, 15], cp=1498),
+            Pokemon('mantine', [6, 13, 14], cp=1497),
+            Pokemon('politoed', [3, 5, 13], cp=1493),
+            Pokemon('charizard', [3, 15, 14], cp=1485),
+            Pokemon('gengar', [5, 11, 14], cp=1483),
+            Pokemon('mew', [15, 12, 11], cp=1470),
+            Pokemon('dewgong', [15, 8, 15]).maximize(1500),
+            Pokemon('azumarill', [12, 15, 13]).maximize(1500),
+            Pokemon('hypno', [13, 15, 14]).maximize(1500),
         ]
         for cand in candidate_explicit:
             cand.populate_cp()
@@ -102,7 +116,7 @@ def main():
         print('candidate_explicit = {}'.format(ub.repr2(candidate_explicit, nl=1)))
 
         for cand in candidate_explicit:
-            print('cand.adjusted = {}, {}'.format(ub.repr2(cand.adjusted, nl=0, precision=2), cand))
+            print('cand.adjusted = {}, {:.2f}, {}'.format(ub.repr2(cand.adjusted, nl=0, precision=2), cand.stat_product, cand))
 
     if mode == 'ultra':
         candidate_csv_text = ub.codeblock(
@@ -122,7 +136,6 @@ def main():
             Pokemon('Swampert', (0, 2, 14), cp=2500, moves=['WATER_GUN', 'HYDRO_CANNON', 'SLUDGE_WAVE']),
             Pokemon('Empoleon', (0, 10, 14), cp=2495, moves=['WATERFALL', 'HYDRO_CANNON', 'DRILL_PECK']),
             Pokemon('sirfetch’d', (4, 11, 12), cp=2485, form='Galarian', moves=['COUNTER', 'CLOSE_COMBAT', 'LEAF_BLADE']),
-            Pokemon('dewgong', (15, 8, 15), cp=2500, form='Galarian', moves=['COUNTER', 'CLOSE_COMBAT', 'LEAF_BLADE']),
         ]
     # else:
     #     raise KeyError(mode)
