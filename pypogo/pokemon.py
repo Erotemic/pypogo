@@ -461,7 +461,7 @@ class Pokemon(ub.NiceRepr):
             table = self.league_ranking_table(
                 max_cp=max_cp, max_level=max_level)
             row = table.iloc[0]
-            self.ivs = [row['iva'], row['ivd'], row['ivs']]
+            self.ivs = [int(row['iva']), int(row['ivd']), int(row['ivs'])]
         elif ivs == 'keep':
             if self.ivs is not None:
                 raise ValueError('Cannot keep ivs when they are unknown')

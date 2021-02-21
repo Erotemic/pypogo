@@ -187,7 +187,7 @@ def plot_stats_comparison():
         for mon in leauge_family:
             mon.base_stats
             row = {
-                'name': mon.display_name(),
+                'name': mon.display_name() + '\n' + str(mon.cp) + ' ' + str(mon.ivs),
                 'stat_product': mon.stat_product,
             }
             row.update(mon.adjusted)
