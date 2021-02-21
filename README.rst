@@ -84,8 +84,9 @@ You can do build a table of league rankings for different IV combinations
     [4096 rows x 11 columns]
 
 
-This module is being developed mainly for fun and personal use. Feel free to
-fork, contribute, or use as you'd like.
+This module is being developed mainly for fun and personal use. Features as
+added as I need them to answer questions mostly to do with my own personal
+min-maxing. Feel free to fork, contribute, or use as you'd like.
 
 
 +------------------+----------------------------------------------+
