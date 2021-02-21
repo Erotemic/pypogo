@@ -321,7 +321,15 @@ class Pokemon(ub.NiceRepr):
 
     @property
     def stat_product(self):
-        product = (self.adjusted['attack'] * self.adjusted['stamina'] * self.adjusted['defense']) / 1000
+        product = (self.adjusted['attack'] * self.adjusted['stamina'] * self.adjusted['defense'])
+        return product
+
+    @property
+    def stat_product_k(self):
+        """
+        In other websites stat product is usually divided by 1000
+        """
+        product = self.stat_product / 1000
         return product
 
     @property
@@ -343,25 +351,25 @@ class Pokemon(ub.NiceRepr):
 
             z = Pokemon('machamp', [1, 15, 6]).maximize(1500)
             z.populate_cp()
-            z.stat_product
+            z.stat_product_k
             print('z = {!r}'.format(z))
-            print('z.stat_product = {!r}'.format(z.stat_product))
+            print('z.stat_product_k = {!r}'.format(z.stat_product_k))
 
             self = Pokemon('medicham', ivs=[7, 15, 14], cp=1368)
             self.populate_cp()
             print('self = {!r}'.format(self))
             self.adjusted
             print('self.adjusted = {!r}'.format(self.adjusted))
-            stat_product = self.stat_product
-            print('stat_product = {!r}'.format(stat_product))
+            stat_product_k = self.stat_product_k
+            print('stat_product_k = {!r}'.format(stat_product_k))
 
             m3 = Pokemon('medicham', ivs=[7, 15, 14], cp=1377)
             m3.populate_cp()
             print('m3 = {!r}'.format(m3))
             m3.adjusted
             print('m3.adjusted = {!r}'.format(m3.adjusted))
-            stat_product = m3.stat_product
-            print('stat_product = {!r}'.format(stat_product))
+            stat_product_k = m3.stat_product_k
+            print('stat_product_k = {!r}'.format(stat_product_k))
 
             n = self.copy()
             n.level += 0.5 * 4
@@ -369,7 +377,7 @@ class Pokemon(ub.NiceRepr):
             n.populate_cp()
             print('n = {!r}'.format(n))
             print('n.adjusted = {!r}'.format(n.adjusted))
-            stat_product1 = n.stat_product
+            stat_product1 = n.stat_product_k
             print('stat_product1 = {!r}'.format(stat_product1))
 
             y = self.copy().maximize(max_cp=1400, max_level=51)
@@ -378,13 +386,13 @@ class Pokemon(ub.NiceRepr):
             y.cp = None
             y.populate_cp()
             print('y.adjusted = {!r}'.format(y.adjusted))
-            stat_product1 = y.stat_product
+            stat_product1 = y.stat_product_k
             print('stat_product1 = {!r}'.format(stat_product1))
 
             x = Pokemon('medicham', ivs=[13, 13, 13]).maximize(max_cp=1500, max_level=40)
             n.populate_cp()
             print('x = {!r}'.format(x))
-            stat_product2 = x.stat_product
+            stat_product2 = x.stat_product_k
             print('x.adjusted = {!r}'.format(x.adjusted))
             print('stat_product2 = {!r}'.format(stat_product2))
 
@@ -422,7 +430,7 @@ class Pokemon(ub.NiceRepr):
                     'rank': league_row['rank'],
                     'level': league_row['level'],
                     'cp': league_row['cp'],
-                    'stat_product': league_row['stat_product'],
+                    'stat_product_k': league_row['stat_product_k'],
                     'attack': league_row['attack'],
                     'defense': league_row['defense'],
                     'stamina': league_row['stamina'],
@@ -733,13 +741,13 @@ class Pokemon(ub.NiceRepr):
             rows.append(row)
 
         df = pd.DataFrame.from_dict(rows)
-        df['stat_product'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
-        df = df.sort_values('stat_product', ascending=False)
+        df['stat_product_k'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
+        df = df.sort_values('stat_product_k', ascending=False)
         df['rank'] = np.arange(1, len(df) + 1)
         df = df.set_index('rank', drop=False)
-        min_ = df['stat_product'].min()
-        max_ = df['stat_product'].max()
-        df['percent'] = ((df['stat_product'] - min_) / (max_ - min_)) * 100
+        min_ = df['stat_product_k'].min()
+        max_ = df['stat_product_k'].max()
+        df['percent'] = ((df['stat_product_k'] - min_) / (max_ - min_)) * 100
         return df
 
     @classmethod

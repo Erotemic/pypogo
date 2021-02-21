@@ -159,9 +159,9 @@ def hows_my_medicham_doing():
         print('level = {!r}'.format(level))
         base = base.copy(level=level)
 
-        print('base.stat_product = {!r}'.format(base.stat_product))
-        xl_row = rankings[rankings.stat_product < base.stat_product].iloc[0:1]
-        classic_row = classic_rankings[classic_rankings.stat_product < base.stat_product].iloc[0:1]
+        print('base.stat_product_k = {!r}'.format(base.stat_product_k))
+        xl_row = rankings[rankings.stat_product_k < base.stat_product_k].iloc[0:1]
+        classic_row = classic_rankings[classic_rankings.stat_product_k < base.stat_product_k].iloc[0:1]
         print(pd.concat([xl_row, classic_row]))
         level += 0.5
 
@@ -170,18 +170,18 @@ def plot_stats_comparison():
     from pypogo.pokemon import Pokemon
     base = Pokemon('eevee')
 
-    leage_cps = {
+    league_cps = {
         'Great': 1500,
         'Ultra': 2500,
     }
 
-    leage_families = {
+    league_families = {
         key: [mon.maximize(val, ivs='maximize', max_level=51)
                  for mon in ub.ProgIter(base.family(), desc='maximizing')]
-        for key, val in leage_cps.items()
+        for key, val in league_cps.items()
     }
 
-    for key, leauge_family in leage_families.items():
+    for key, leauge_family in league_families.items():
 
         rows = []
         for mon in leauge_family:
@@ -202,7 +202,7 @@ def plot_stats_comparison():
             expanded.append(row)
             row = ub.dict_union(orig, {'stat': row['stamina'], 'stat_type': 'stamina'})
             expanded.append(row)
-            row = ub.dict_union(orig, {'stat': row['stat_product'] / 1e1, 'stat_type': 'stat_prod/1e4'})
+            row = ub.dict_union(orig, {'stat': row['stat_product'] ** (1 / 3), 'stat_type': 'stat_prod^(1/3)'})
             expanded.append(row)
 
         import pandas as pd
@@ -213,6 +213,6 @@ def plot_stats_comparison():
         kwplot.autompl()
         sns.set()
 
-        kwplot.figure(fnum=leage_cps[key])
+        kwplot.figure(fnum=league_cps[key])
         ax = sns.barplot(data=df, y='stat', x='name', hue='stat_type')
         ax.set_title('Best Adjusted Stats for {}'.format(key))
