@@ -56,8 +56,8 @@ You can do purification and evolution operations.
     >>> print(evos[1])
     self = <Pokemon(ralts(😈,✨), 274, 20, [6, 13, 15], None)>
     new  = <Pokemon(ralts(👼,✨), 285, 20, (8, 15, 15), None)>
-    <Pokemon(gardevoir(👼,✨), 1718, 20, (8, 15, 15), None)>
     <Pokemon(gallade(👼,✨), 1718, 20, (8, 15, 15), None)>
+    <Pokemon(gardevoir(👼,✨), 1718, 20, (8, 15, 15), None)>
 
 You can do build a table of league rankings for different IV combinations
 

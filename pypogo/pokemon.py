@@ -236,8 +236,9 @@ class Pokemon(ub.NiceRepr):
             >>> print(evos[1])
             self = <Pokemon(ralts(😈,✨), 274, 20, [6, 13, 15], None)>
             new  = <Pokemon(ralts(👼,✨), 285, 20, (8, 15, 15), None)>
-            <Pokemon(gardevoir(👼,✨), 1718, 20, (8, 15, 15), None)>
             <Pokemon(gallade(👼,✨), 1718, 20, (8, 15, 15), None)>
+            <Pokemon(gardevoir(👼,✨), 1718, 20, (8, 15, 15), None)>
+
         """
         if not self.shadow:
             raise Exception('Only can purify shadow pokemon')
@@ -295,7 +296,7 @@ class Pokemon(ub.NiceRepr):
             'shadow': self.shadow,
             'shiny': self.shiny,
         }
-        for name in cc:
+        for name in sorted(cc):
             if name not in blocklist:
                 if name == self.name:
                     other = Pokemon(name, cp=self.cp, **kw)
