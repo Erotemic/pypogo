@@ -143,7 +143,7 @@ class Pokemon(ub.NiceRepr):
         possible_moves = api.name_to_moves[self.name]
         return possible_moves
 
-    def populate_level(self, max_level=50):
+    def populate_level(self, max_level=51):
         """ Try and find the level given the info """
         # hacky, could be more elegant
         target_cp = self.cp
@@ -282,7 +282,7 @@ class Pokemon(ub.NiceRepr):
                 if other.shadow:
                     yield other.purify()
 
-    def check_evolution_cps(self, max_cp=1500, max_level=50):
+    def check_evolution_cps(self, max_cp=1500, max_level=51):
         """
         self = Pokemon('gastly', ivs=[6, 13, 15])
         self.check_evolution_cps()
@@ -321,10 +321,19 @@ class Pokemon(ub.NiceRepr):
 
     @property
     def stat_product(self):
-        product = self.adjusted['attack'] * self.adjusted['stamina'] * self.adjusted['defense']
+        product = (self.adjusted['attack'] * self.adjusted['stamina'] * self.adjusted['defense']) / 1000
         return product
 
-    def league_ranking(self, have_ivs=None, max_cp=1500, max_level=50, min_iv=0):
+    @property
+    def base_stats(self):
+        base_stats = {
+            'attack': self.info['base_attack'],
+            'defense': self.info['base_defense'],
+            'stamina': self.info['base_stamina'],
+        }
+        return base_stats
+
+    def league_ranking(self, have_ivs=None, max_cp=1500, max_level=51, min_iv=0):
         """
         Given a set of IVs for this pokemon compute the league rankings
 
@@ -363,7 +372,7 @@ class Pokemon(ub.NiceRepr):
             stat_product1 = n.stat_product
             print('stat_product1 = {!r}'.format(stat_product1))
 
-            y = self.copy().maximize(max_cp=1400, max_level=50)
+            y = self.copy().maximize(max_cp=1400, max_level=51)
             print('y = {!r}'.format(y))
             y.level += 0.5
             y.cp = None
@@ -428,14 +437,36 @@ class Pokemon(ub.NiceRepr):
             print(rankings.sort_values('rank'))
             return rankings
 
-    def maximize(self, max_cp=1500, max_level=50):
+    def maximize(self, max_cp=1500, max_level=50, ivs='auto'):
         """
+        Choose level that maximizes CP subject to constraints.
+
+        Args:
+            max_cp (int): Maximum CP for target league
+            max_level (int): Usually 40, 41, 50, or 51.
+            ivs (str):
+                if "keep", keep existing ivs.
+                if "maximize", find the best ivs.
+                if "auto", keep existing ivs, otherwise find the best.
+
         Example:
             self = Pokemon('dewgong', (15, 8, 15), moves=['ICE_SHARD', 'ICY_WIND', 'WATER_PULSE'])
             self.maximize(max_cp=1500)
         """
-        if self.ivs is None:
-            self.ivs = [15, 15, 15]
+        if ivs == 'auto':
+            ivs = 'maximize' if ivs is None else 'keep'
+
+        if ivs == 'maximize':
+            # TODO: could be more efficient
+            table = self.league_ranking_table(
+                max_cp=max_cp, max_level=max_level)
+            row = table.iloc[0]
+            self.ivs = [row['iva'], row['ivd'], row['ivs']]
+        elif ivs == 'keep':
+            if self.ivs is not None:
+                raise ValueError('Cannot keep ivs when they are unknown')
+        else:
+            raise KeyError(ivs)
 
         assert self.ivs is not None
         iva, ivd, ivs = self.ivs
@@ -463,7 +494,7 @@ class Pokemon(ub.NiceRepr):
 
         return self
 
-    def league_ranking_table(self, max_cp=1500, max_level=50, min_iv=0):
+    def league_ranking_table(self, max_cp=1500, max_level=51, min_iv=0):
         """
         Calculate this Pokemon species' league rankings for all IV
         combinations, based on the adjusted stat product heuristic.
@@ -663,8 +694,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (13, 15, 10),
             >>>     (15, 15, 11),
             >>> ]
-            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=1500, min_iv=10, max_level=50)
-            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=2500, min_iv=10, max_level=50)
+            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=1500, min_iv=10, max_level=51)
+            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=2500, min_iv=10, max_level=51)
 
         """
         rows = []

@@ -2,6 +2,7 @@ import ubelt as ub
 from pypogo.pokemon import Pokemon
 from pypogo.pogo_api import api
 
+
 def stats_distro():
     candidates = [
         # Pokemon('Gengar', (7, 14, 14), cp=2500, moves=['SHADOW_CLAW', 'SHADOW_PUNCH', 'SHADOW_BALL']),
@@ -144,3 +145,74 @@ def whats_the_cp_for_evo():
         print('variant = {!r}'.format(variant))
         for mon in list(variant.family()):
             print(mon)
+
+
+def hows_my_medicham_doing():
+    base = Pokemon('medicham', ivs=[7, 15, 14], level=46)
+    rankings = base.league_ranking_table()
+    classic_rankings = base.league_ranking_table(max_level=41)
+
+    import pandas as pd
+
+    level = base.level
+    while level < 49.5:
+        print('level = {!r}'.format(level))
+        base = base.copy(level=level)
+
+        print('base.stat_product = {!r}'.format(base.stat_product))
+        xl_row = rankings[rankings.stat_product < base.stat_product].iloc[0:1]
+        classic_row = classic_rankings[classic_rankings.stat_product < base.stat_product].iloc[0:1]
+        print(pd.concat([xl_row, classic_row]))
+        level += 0.5
+
+
+def plot_stats_comparison():
+    from pypogo.pokemon import Pokemon
+    base = Pokemon('eevee')
+
+    leage_cps = {
+        'Great': 1500,
+        'Ultra': 2500,
+    }
+
+    leage_families = {
+        key: [mon.maximize(val, ivs='maximize', max_level=51)
+                 for mon in ub.ProgIter(base.family(), desc='maximizing')]
+        for key, val in leage_cps.items()
+    }
+
+    for key, leauge_family in leage_families.items():
+
+        rows = []
+        for mon in leauge_family:
+            mon.base_stats
+            row = {
+                'name': mon.display_name(),
+                'stat_product': mon.stat_product,
+            }
+            row.update(mon.adjusted)
+            rows.append(row)
+
+        expanded = []
+        for row in rows:
+            orig = row.copy()
+            row = ub.dict_union(orig, {'stat': row['attack'], 'stat_type': 'attack'})
+            expanded.append(row)
+            row = ub.dict_union(orig, {'stat': row['defense'], 'stat_type': 'defense'})
+            expanded.append(row)
+            row = ub.dict_union(orig, {'stat': row['stamina'], 'stat_type': 'stamina'})
+            expanded.append(row)
+            row = ub.dict_union(orig, {'stat': row['stat_product'] / 1e1, 'stat_type': 'stat_prod/1e4'})
+            expanded.append(row)
+
+        import pandas as pd
+        df = pd.DataFrame(expanded)
+
+        import seaborn as sns
+        import kwplot
+        kwplot.autompl()
+        sns.set()
+
+        kwplot.figure(fnum=leage_cps[key])
+        ax = sns.barplot(data=df, y='stat', x='name', hue='stat_type')
+        ax.set_title('Best Adjusted Stats for {}'.format(key))
