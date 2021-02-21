@@ -182,16 +182,16 @@ def plot_stats_comparison():
     }
 
     others = [
-        # 'meganium',
-        # 'ampharos',
-        # 'typhlosion',
-        # 'politoed',
-        # 'darkrai',
-        # 'hypno',
-        # 'ninetales',
-        # 'Raichu',
-        'regice',
-        'castform_snowy',
+        'meganium',
+        'ampharos',
+        'typhlosion',
+        'politoed',
+        'darkrai',
+        'hypno',
+        'ninetales',
+        'Raichu',
+        # 'regice',
+        # 'castform_snowy',
     ]
 
     for key, candidates in league_families.items():
