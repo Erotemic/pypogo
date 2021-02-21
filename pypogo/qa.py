@@ -176,43 +176,73 @@ def plot_stats_comparison():
     }
 
     league_families = {
-        key: [mon.maximize(val, ivs='maximize', max_level=51)
+        key: [mon.maximize(max_cp, ivs='maximize', max_level=51)
                  for mon in ub.ProgIter(base.family(), desc='maximizing')]
-        for key, val in league_cps.items()
+        for key, max_cp in league_cps.items()
     }
 
-    for key, leauge_family in league_families.items():
+    others = [
+        # 'meganium',
+        # 'ampharos',
+        # 'typhlosion',
+        # 'politoed',
+        # 'darkrai',
+        # 'hypno',
+        # 'ninetales',
+        # 'Raichu',
+        'regice',
+        'castform_snowy',
+    ]
 
-        rows = []
-        for mon in leauge_family:
-            mon.base_stats
-            row = {
-                'name': mon.display_name() + '\n' + str(mon.cp) + ' ' + str(mon.ivs),
-                'stat_product': mon.stat_product,
-            }
-            row.update(mon.adjusted)
-            rows.append(row)
+    for key, candidates in league_families.items():
+        max_cp = league_cps[key]
+        for name in ub.ProgIter(others, 'maximize others'):
+            mon = Pokemon(name).maximize(max_cp, ivs='maximize', max_level=51)
+            candidates.append(mon)
 
-        expanded = []
-        for row in rows:
-            orig = row.copy()
-            row = ub.dict_union(orig, {'stat': row['attack'], 'stat_type': 'attack'})
-            expanded.append(row)
-            row = ub.dict_union(orig, {'stat': row['defense'], 'stat_type': 'defense'})
-            expanded.append(row)
-            row = ub.dict_union(orig, {'stat': row['stamina'], 'stat_type': 'stamina'})
-            expanded.append(row)
-            row = ub.dict_union(orig, {'stat': row['stat_product'] ** (1 / 3), 'stat_type': 'stat_prod^(1/3)'})
-            expanded.append(row)
+    for key, candidates in league_families.items():
 
-        import pandas as pd
-        df = pd.DataFrame(expanded)
+        max_cp = league_cps[key]
 
         import seaborn as sns
         import kwplot
         kwplot.autompl()
         sns.set()
 
-        kwplot.figure(fnum=league_cps[key])
-        ax = sns.barplot(data=df, y='stat', x='name', hue='stat_type')
-        ax.set_title('Best Adjusted Stats for {}'.format(key))
+        type_to_cand = ub.group_items(candidates, lambda c: c.typing)
+        pnum_ = kwplot.PlotNums(nSubplots=len(type_to_cand), nCols=1)
+        for typing, cands in type_to_cand.items():
+            rows = []
+            for mon in cands:
+                mon.base_stats
+                row = {
+                    'name': mon.display_name() + '\n' + str(mon.cp) + ' ' + str(mon.ivs),
+                    'stat_product': mon.stat_product,
+                }
+                row.update(mon.adjusted)
+                rows.append(row)
+
+            expanded = []
+            for row in rows:
+                orig = row.copy()
+                row = ub.dict_union(orig, {'stat': row['attack'], 'stat_type': 'attack'})
+                expanded.append(row)
+                row = ub.dict_union(orig, {'stat': row['defense'], 'stat_type': 'defense'})
+                expanded.append(row)
+                row = ub.dict_union(orig, {'stat': row['stamina'], 'stat_type': 'stamina'})
+                expanded.append(row)
+                row = ub.dict_union(orig, {'stat': row['stat_product'] ** (1 / 3), 'stat_type': 'stat_prod^(1/3)'})
+                expanded.append(row)
+
+            import pandas as pd
+            df = pd.DataFrame(expanded)
+
+            kwplot.figure(fnum=max_cp, pnum=pnum_())
+            ax = sns.barplot(data=df, x='stat', y='name', hue='stat_type', orient='h')
+
+            if max_cp == 2500:
+                ax.set_xlim(0, 250)
+            else:
+                ax.set_xlim(0, 200)
+
+        kwplot.set_figtitle('Best Adjusted Stats for {}'.format(key))

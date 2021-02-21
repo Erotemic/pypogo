@@ -31,6 +31,7 @@ class PogoAPI(ub.NiceRepr):
             'current_pokemon_moves': api.base + 'current_pokemon_moves.json',
             'pokemon_evolutions': api.base + 'pokemon_evolutions.json',
             'cp_multiplier': api.base + 'cp_multiplier.json',
+            'pokemon_types': api.base + 'pokemon_types.json',
         }
         api.data = {}
         for key, url in api.routes.items():
@@ -48,14 +49,14 @@ class PogoAPI(ub.NiceRepr):
         _name_to_stats = dict(_name_to_stats)
         api.name_to_stats = _name_to_stats
 
-        _name_to_items = ub.group_items(
+        _name_to_moves = ub.group_items(
             api.data['current_pokemon_moves'],
             lambda item: item['pokemon_name'].lower())
-        _name_to_items.default_factory = None
-        _name_to_items = dict(_name_to_items)
+        _name_to_moves.default_factory = None
+        _name_to_moves = dict(_name_to_moves)
 
         # base = 'http://pokeapi.co/api/v2/pokemon/'
-        api.name_to_moves = _name_to_items
+        api.name_to_moves = _name_to_moves
 
         evolutions = api.data['pokemon_evolutions']
         _name_to_evolutions = ub.group_items(evolutions, lambda item: item['pokemon_name'].lower())
@@ -70,6 +71,12 @@ class PogoAPI(ub.NiceRepr):
                     noevos.append(empty)
                 _name_to_evolutions[key] = noevos
 
+        _name_to_types = ub.group_items(
+            api.data['pokemon_types'],
+            lambda item: item['pokemon_name'].lower())
+        _name_to_types = dict(_name_to_types)
+        api.name_to_type = _name_to_types
+
         evo_graph = nx.DiGraph()
         for name, form_evo_list in _name_to_evolutions.items():
             for form_evo in form_evo_list:
@@ -81,6 +88,7 @@ class PogoAPI(ub.NiceRepr):
 
         api.name_to_family = {}
         api.name_to_base = {}
+
         evo_graph.remove_edges_from(nx.selfloop_edges(evo_graph))
         api.evo_graph = evo_graph
         for cc in list(nx.connected_components(api.evo_graph.to_undirected())):
@@ -128,6 +136,21 @@ class PogoAPI(ub.NiceRepr):
             #     assert form == 'Galarian', '{}, {}'.format(api, name)
             name = name.split('_galarian')[0]
 
+        if name.endswith('snowy'):
+            if form is None:
+                form = 'snowy'
+            name = name.split('_' + form)[0]
+
+        if name.endswith('sunny'):
+            if form is None:
+                form = 'sunny'
+            name = name.split('_' + form)[0]
+
+        if name.endswith('rainy'):
+            if form is None:
+                form = 'rainy'
+            name = name.split('_' + form)[0]
+
         if name == 'farfetchd':
             name = "farfetch\u2019d"
 
@@ -138,6 +161,19 @@ class PogoAPI(ub.NiceRepr):
 
     def get_info(api, name, form=None):
         """
+        Example:
+            >>> from pypogo.pogo_api import *  # NOQA
+            >>> api = PogoAPI()
+            >>> name = 'stunfisk_galarian'
+            >>> print(ub.repr2(api.get_info(name)))
+            >>> name = 'stunfisk'
+            >>> print(ub.repr2(api.get_info(name)))
+            >>> name = 'umbreon'
+            >>> print(ub.repr2(api.get_info(name)))
+            >>> name = 'eevee'
+            >>> print(ub.repr2(api.get_info(name)))
+            >>> name = 'castform_snowy'
+            >>> print(ub.repr2(api.get_info(name)))
         """
         try:
             name_, form_ = api.normalize_name_and_form(name, form)
@@ -149,6 +185,7 @@ class PogoAPI(ub.NiceRepr):
                 api.name_to_stats[name_],
                 api.name_to_moves[name_],
                 api.name_to_evolutions[name_],
+                api.name_to_type[name_],
             ]
         except Exception:
             raise Exception(
@@ -158,7 +195,7 @@ class PogoAPI(ub.NiceRepr):
         for all_infos in infos:
             part = None
             for _info in all_infos:
-                if _info['form'] == form_:
+                if _info['form'].lower() == form_.lower():
                     part = _info
             if part is None:
                 raise KeyError

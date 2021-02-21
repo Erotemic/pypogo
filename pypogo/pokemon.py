@@ -29,20 +29,28 @@ class Pokemon(ub.NiceRepr):
             <Pokemon(beedrill, 907, 20, (0, 1, 10), None)>,
             <Pokemon(kakuna, 168, 20, (0, 1, 10), None)>,
         ]
+
+        >>> Pokemon('castform_snowy', ivs=[0, 0, 0], level=30).populate_stats()
     """
     def __init__(self, name, ivs=None, level=None, moves=None, shadow=False,
-                 form='Normal', cp=None, autobuild=True, shiny=False,
+                 form=None, cp=None, autobuild=True, shiny=False,
                  adjusted=None):
+
+        self.api = api
+
+        name, form = api.normalize_name_and_form(name, form)
+
         self.name = name.lower()
         self.level = level
         self.ivs = ivs
         self.moves = moves
         self.shadow = shadow
         self.shiny = shiny
+
         if shadow:
             form = 'Shadow'
+
         self.form = form
-        self.api = api
         self.cp = cp
         self.adjusted = adjusted
 
@@ -95,6 +103,10 @@ class Pokemon(ub.NiceRepr):
         kw.update(overwrite)
         new = Pokemon(**kw)
         return new
+
+    @property
+    def typing(self):
+        return tuple(sorted(self.info['type'] ))
 
     def display_name(self):
 
@@ -169,6 +181,13 @@ class Pokemon(ub.NiceRepr):
         return self
 
     def populate_stats(self):
+        """
+        Example:
+            >>> # TODO: handle castform cases.
+            >>> from pypogo.pokemon import *  # NOQA
+            >>> Pokemon('castform', form='snowy', ivs=[0, 0, 0], level=30).populate_stats()
+            >>> Pokemon('castform_snowy', ivs=[0, 0, 0], level=30).populate_stats()
+        """
         info = api.get_info(name=self.name, form=self.form)
         self.learnable = api.learnable[self.name]
         self.info = info
