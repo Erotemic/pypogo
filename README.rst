@@ -1,5 +1,5 @@
-The pypogo Module
-================
+pypogo - The Python Pokemon Go Module
+=====================================
 
 |CircleCI| 
 
@@ -16,8 +16,9 @@ rank of IVs based on the stats product of the mons at various levels.
 Battle simulation and other statistics like knowing the cost of powering up a
 particular mon to PVP level given its IV ranking would be interesting.
 
-The main way to interface is using the ``Pokemon`` class. You can find IV
-rankings for leagues, check evolution CP, etc..
+The main way to interface is using the ``Pokemon`` class. 
+
+You can find IVs and levels to maximize CP under constraints:
 
 .. code:: python
 
@@ -39,8 +40,12 @@ rankings for leagues, check evolution CP, etc..
     mon = <Pokemon(jolteon, 1500, 19.5, [0, 12, 15], None)>
     mon = <Pokemon(vaporeon, 1500, 18.0, [1, 15, 15], None)>
 
+
+You can do purification and evolution operations.
+
 .. code:: python
 
+    >>> from pypogo.pokemon import Pokemon
     >>> self = Pokemon('ralts', ivs=[6, 13, 15], level=20,
     >>>                 shadow=True, shiny=True)
     >>> new = self.purify()
@@ -54,8 +59,11 @@ rankings for leagues, check evolution CP, etc..
     <Pokemon(gardevoir(👼,✨), 1718, 20, (8, 15, 15), None)>
     <Pokemon(gallade(👼,✨), 1718, 20, (8, 15, 15), None)>
 
+You can do build a table of league rankings for different IV combinations
+
 .. code:: python
 
+    >>> from pypogo.pokemon import Pokemon
     >>> self = Pokemon('beedrill')
     >>> beedrill_df = self.league_ranking_table(max_cp=1500)
     >>> print(beedrill_df)
@@ -75,6 +83,9 @@ rankings for leagues, check evolution CP, etc..
     ...
     [4096 rows x 11 columns]
 
+
+This module is being developed mainly for fun and personal use. Feel free to
+fork, contribute, or use as you'd like.
 
 
 +------------------+----------------------------------------------+
