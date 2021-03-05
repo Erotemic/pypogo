@@ -223,6 +223,8 @@ class PogoAPI(ub.NiceRepr):
                 api.learnable[name_] = {}
             api.learnable[name_]['fast'] = sorted(fast_moves)
             api.learnable[name_]['charge'] = sorted(charge_moves)
+
+        api.LEVEL_CAP = 51
         return info
 
 

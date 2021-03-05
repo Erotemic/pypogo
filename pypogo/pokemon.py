@@ -366,7 +366,7 @@ class Pokemon(ub.NiceRepr):
         }
         return base_stats
 
-    def league_ranking(self, have_ivs=None, max_cp=1500, max_level=51, min_iv=0):
+    def league_ranking(self, have_ivs=None, max_cp=1500, max_level=51, min_iv=0, verbose=0, force=False):
         """
         Given a set of IVs for this pokemon compute the league rankings
 
@@ -432,43 +432,57 @@ class Pokemon(ub.NiceRepr):
         league_df = league_df.set_index(['iva', 'ivd', 'ivs'])
 
         if abs(min(league_df['cp'].max() - min(3000, max_cp), 0)) > 200:
-            print('Out of this league {}'.format(max_cp))
-        else:
-            rows = []
-            for haves in have_ivs:
+            if verbose:
+                print('Out of this league {}'.format(max_cp))
 
-                if isinstance(haves, Pokemon) or type(haves).__name__ == 'Pokemon':
-                    pkmn = haves
-                    ivs = pkmn.ivs
-                    name = pkmn.display_name()
-                else:
-                    ivs = haves
-                    name = self.name
+        rows = []
+        for haves in have_ivs:
 
-                ivs = tuple(ivs)
-                # ultra_row = ultra_df.loc[haves]
-                league_row = league_df.loc[ivs]
-                rows.append({
-                    'iva': ivs[0],
-                    'ivd': ivs[1],
-                    'ivs': ivs[2],
-                    'rank': league_row['rank'],
-                    'level': league_row['level'],
-                    'cp': league_row['cp'],
-                    'stat_product_k': league_row['stat_product_k'],
-                    'attack': league_row['attack'],
-                    'defense': league_row['defense'],
-                    'stamina': league_row['stamina'],
-                    'percent': league_row['percent'],
-                    'name': name,
-                })
-            rankings = pd.DataFrame.from_dict(rows)
-            #
+            if isinstance(haves, Pokemon) or type(haves).__name__ == 'Pokemon':
+                pkmn = haves
+                ivs = pkmn.ivs
+                name = pkmn.display_name()
+            else:
+                ivs = haves
+                name = self.name
+
+            ivs = tuple(ivs)
+            # ultra_row = ultra_df.loc[haves]
+            league_row = league_df.loc[ivs]
+            rows.append({
+                'iva': ivs[0],
+                'ivd': ivs[1],
+                'ivs': ivs[2],
+                'rank': league_row['rank'],
+                'level': league_row['level'],
+                'cp': league_row['cp'],
+                'stat_product_k': league_row['stat_product_k'],
+                'attack': league_row['attack'],
+                'defense': league_row['defense'],
+                'stamina': league_row['stamina'],
+                'percent': league_row['percent'],
+                'name': name,
+            })
+        rankings = pd.DataFrame.from_dict(rows)
+        #
+        if verbose:
             print('')
             print('Leage {} Rankings'.format(max_cp))
             print('self = {!r}'.format(self))
             print(rankings.sort_values('rank'))
-            return rankings
+        return rankings
+
+    def level_up(self, num_times=1):
+        """
+        Num times is the number of times you press the level up button. So its
+        really the number of "half levels".
+        """
+        new_level = self.level + num_times * 0.5
+        if new_level > self.api.LEVEL_CAP:
+            raise ValueError('Cannot level past cap')
+        self.level = new_level
+        self.populate_cp()
+        return self
 
     def maximize(self, max_cp=1500, max_level=50, ivs='auto'):
         """
@@ -487,16 +501,18 @@ class Pokemon(ub.NiceRepr):
             self.maximize(max_cp=1500)
         """
         if ivs == 'auto':
-            ivs = 'maximize' if ivs is None else 'keep'
+            ivs = 'maximize' if self.ivs is None else 'keep'
 
-        if ivs == 'maximize':
+        if isinstance(ivs, list):
+            self.ivs = ivs
+        elif ivs == 'maximize':
             # TODO: could be more efficient
             table = self.league_ranking_table(
                 max_cp=max_cp, max_level=max_level)
             row = table.iloc[0]
             self.ivs = [int(row['iva']), int(row['ivd']), int(row['ivs'])]
         elif ivs == 'keep':
-            if self.ivs is not None:
+            if self.ivs is None:
                 raise ValueError('Cannot keep ivs when they are unknown')
         else:
             raise KeyError(ivs)
