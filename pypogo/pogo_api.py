@@ -11,6 +11,11 @@ class PogoAPI(ub.NiceRepr):
     """
     Object to help with access to data from pogoapi.net
 
+    References:
+        https://pogoapi.net/documentation/
+
+        api.data['current_pokemon_moves']
+
     Example:
         >>> from pypogo.pogo_api import *  # NOQA
         >>> api = PogoAPI()
@@ -23,6 +28,10 @@ class PogoAPI(ub.NiceRepr):
         >>> print(ub.repr2(api.get_info(name)))
         >>> name = 'stunfisk_galarian'
         >>> print(ub.repr2(api.get_info(name)))
+
+        api.data['current_pokemon_moves']
+
+        api
     """
     def __init__(api):
         api.base = 'https://pogoapi.net/api/v1/'
@@ -32,6 +41,9 @@ class PogoAPI(ub.NiceRepr):
             'pokemon_evolutions': api.base + 'pokemon_evolutions.json',
             'cp_multiplier': api.base + 'cp_multiplier.json',
             'pokemon_types': api.base + 'pokemon_types.json',
+
+            'charged_moves': api.base + 'charged_moves.json',
+            'fast_moves': api.base + 'fast_moves.json',
         }
         api.data = {}
         for key, url in api.routes.items():
@@ -100,6 +112,18 @@ class PogoAPI(ub.NiceRepr):
 
         api.name_to_evolutions = _name_to_evolutions
 
+        api.fast_moves = ub.group_items(
+            api.data['fast_moves'],
+            lambda item: normalize(item['name'].lower()))
+
+        api.charged_moves = ub.group_items(
+            api.data['charged_moves'],
+            lambda item: normalize(item['name'].lower()))
+
+        if 0:
+            ub.map_vals(len, api.fast_moves)
+            ub.map_vals(len, api.charged_moves)
+
         api.learnable = {
             'stunfisk_galarian': {
                 'fast': [
@@ -114,6 +138,9 @@ class PogoAPI(ub.NiceRepr):
                 ]
             }
         }
+
+    def normalize(self, x):
+        return normalize(x)
 
     def __nice__(self):
         return str(list(api.routes.keys()))
@@ -174,18 +201,26 @@ class PogoAPI(ub.NiceRepr):
             >>> print(ub.repr2(api.get_info(name)))
             >>> name = 'castform_snowy'
             >>> print(ub.repr2(api.get_info(name)))
+
+            >>> name = 'smeargle'
+            >>> print(ub.repr2(api.get_info(name)))
+
+            >>> name = 'wormadam'
+            >>> print(ub.repr2(api.get_info(name)))
+
         """
         try:
             name_, form_ = api.normalize_name_and_form(name, form)
+            form_ = form_.lower()
         except Exception:
             raise Exception('name={name}, form={form}'.format(**locals()))
 
         try:
             infos = [
                 api.name_to_stats[name_],
-                api.name_to_moves[name_],
                 api.name_to_evolutions[name_],
                 api.name_to_type[name_],
+                api.name_to_moves[name_]
             ]
         except Exception:
             raise Exception(
@@ -194,11 +229,18 @@ class PogoAPI(ub.NiceRepr):
         info = {}
         for all_infos in infos:
             part = None
-            for _info in all_infos:
-                if _info['form'].lower() == form_.lower():
-                    part = _info
-            if part is None:
-                raise KeyError
+            form_to_info = ub.group_items(all_infos, lambda _info: _info['form'].lower())
+            if form_ in form_to_info:
+                parts = form_to_info[form_]
+            else:
+                import warnings
+                warnings.warn('Unable to find name={} form_={} form={}'.format(name, form_, form))
+                parts = ub.peek(form_to_info.values())
+
+            if len(parts) != 1:
+                print('parts = {!r}'.format(parts))
+                raise Exception
+            part = parts[0]
             info.update(part)
 
         if 1:
@@ -214,7 +256,7 @@ class PogoAPI(ub.NiceRepr):
             for move in info['elite_charged_moves']:
                 charge_moves.add(normalize(move))
 
-            if form_ == 'Normal':
+            if form_ == 'normal':
                 if info['form'] == 'Shadow':
                     charge_moves.add('FRUSTRATION')
                     charge_moves.add('RETURN')
@@ -230,4 +272,15 @@ class PogoAPI(ub.NiceRepr):
 
 # HACK: Make a global API variable
 # we should likey do some lazy initialization or something better
-api = PogoAPI()
+
+
+api = None
+
+
+def global_api():
+    global api
+    if api is None:
+        api = PogoAPI()
+    return api
+
+api = global_api()

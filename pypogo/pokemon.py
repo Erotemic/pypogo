@@ -11,7 +11,7 @@ import itertools as it
 import numpy as np
 import pandas as pd
 import networkx as nx
-from pypogo.pogo_api import api
+from pypogo.pogo_api import global_api
 
 
 class Pokemon(ub.NiceRepr):
@@ -36,9 +36,9 @@ class Pokemon(ub.NiceRepr):
                  form=None, cp=None, autobuild=True, shiny=False,
                  adjusted=None):
 
-        self.api = api
+        self.api = global_api()
 
-        name, form = api.normalize_name_and_form(name, form)
+        name, form = self.api.normalize_name_and_form(name, form)
 
         self.name = name.lower()
         self.level = level
@@ -71,7 +71,7 @@ class Pokemon(ub.NiceRepr):
             'name': self.name,
             'ivs': self.ivs,
             'level': self.level,
-            'form': self.form,
+            'form': self.formself.moves,
             'shadow': self.shadow,
             'shiny': self.shiny,
             'moves': self.moves,
@@ -152,8 +152,15 @@ class Pokemon(ub.NiceRepr):
         # return str([self.name] + self.moves + [self.level] + self.ivs)
 
     def lookup_moves(self):
-        possible_moves = api.name_to_moves[self.name]
+        possible_moves = self.api.name_to_moves[self.name]
         return possible_moves
+
+    def populate_all(self):
+        if self.ivs is None or self.level is None:
+            raise Exception('must have level and ivs to populate all')
+        self.populate_cp()
+        self.populate_stats()
+        self.populate_move_stats()
 
     def populate_level(self, max_level=51):
         """ Try and find the level given the info """
@@ -188,8 +195,8 @@ class Pokemon(ub.NiceRepr):
             >>> Pokemon('castform', form='snowy', ivs=[0, 0, 0], level=30).populate_stats()
             >>> Pokemon('castform_snowy', ivs=[0, 0, 0], level=30).populate_stats()
         """
-        info = api.get_info(name=self.name, form=self.form)
-        self.learnable = api.learnable[self.name]
+        info = self.api.get_info(name=self.name, form=self.form)
+        self.learnable = self.api.learnable[self.name]
         self.info = info
         # self.items = items
         return self
@@ -281,12 +288,12 @@ class Pokemon(ub.NiceRepr):
             blocklist.add(self.name)
 
         if not ancestors:
-            toadd = set(nx.ancestors(api.evo_graph, self.name))
+            toadd = set(nx.ancestors(self.api.evo_graph, self.name))
             blocklist.update(toadd)
 
-        cc = api.name_to_family[self.name]
+        cc = self.api.name_to_family[self.name]
         if onlyadj:
-            keeplist = set(api.evo_graph.adj[self.name])
+            keeplist = set(self.api.evo_graph.adj[self.name])
             blocklist = set(cc) - keeplist
 
         kw = {
@@ -812,6 +819,94 @@ class Pokemon(ub.NiceRepr):
         return df
 
     @classmethod
+    def random(Pokemon, name=None, level=None, ivs=None, rng=None):
+        """
+        Example:
+            >>> from pypogo.pokemon import *  # NOQA
+            >>> self = Pokemon.random()
+            >>> print('self = {!r}'.format(self))
+            >>> print('self.fast_move = {}'.format(ub.repr2(self.fast_move, nl=1)))
+            >>> print('self.charged_moves = {}'.format(ub.repr2(self.charged_moves, nl=2)))
+
+        Ignore:
+            while True:
+                self = Pokemon.random()
+
+            self.random(name='shellos')
+            self.random(name='cherrim')
+            self.random(name='sawsbuck')
+            self.random(name='smeargle')
+
+            self = Pokemon(name='smeargle')
+
+            name='smeargle'
+
+            sawsbuck
+        """
+        import random
+        # rng = None
+        # rng = ub.ensure_rng(None)
+        if rng is None:
+            rng = random.Random()
+
+        blocklist = {
+            'smeargle'
+        }
+
+        while name is None or name in blocklist:
+            # if name is None:
+            api = global_api()
+            valid_names = list(api.name_to_base)
+            name = rng.choice(valid_names)
+
+        print('name = {!r}'.format(name))
+        self = Pokemon(name)
+
+        max_level = 51
+        if level is None:
+            self.level = rng.randint(1, max_level)
+        else:
+            self.level = level
+        assert 1 <= self.level <= max_level
+
+        if ivs is None:
+            self.ivs = [rng.randint(0, 16), rng.randint(0, 16), rng.randint(0, 16)]
+        else:
+            ivs = self.ivs
+
+        cands = self.candidate_moveset()
+        fast_name = rng.choice(cands['fast'])
+        charged_names = rng.sample(cands['charged'], k=min(len(cands['charged']), 2))
+        self.moves = [fast_name] + charged_names
+
+        self.populate_all()
+        return self
+
+    def populate_move_stats(self):
+        fast_cand = []
+        charged_cand = []
+
+        for move in self.moves:
+            move = self.api.normalize(move)
+            if move in self.api.fast_moves:
+                fast = self.api.fast_moves[move]
+                fast_cand.extend(fast)
+            elif move in self.api.charged_moves:
+                charged = self.api.charged_moves[move]
+                charged_cand.extend(charged)
+            else:
+                print('unknown move {}'.format(move))
+
+        if len(fast_cand) != 1:
+            raise Exception('MUST HAVE 1 FAST MOVE')
+
+        if not (0 < len(charged_cand) < 3):
+            raise Exception('MUST HAVE 1-2 CHARGE MOVES')
+
+        self.fast_move = fast_cand[0]
+        self.charged_moves = charged_cand[0:2]
+
+    @classmethod
     def from_pvpoke_row(Pokemon, row):
         """
         Atempt to build a pokemon object from the format used by pvpoke.com
@@ -894,16 +989,17 @@ class Pokemon(ub.NiceRepr):
             cm2 = fixup.get(cm2, cm2)
 
             # Check if a shadow variant exists to ensure the move index is right on pvpoke
+            _api = self.api
             if not self.shadow:
                 if self.form not in {'Alola', 'Galarian'}:
-                    has_shadow = any(item['form'] == 'Shadow' for item in api.name_to_stats[self.name])
+                    has_shadow = any(item['form'] == 'Shadow' for item in _api.name_to_stats[self.name])
                     if has_shadow:
-                        if 'RETURN' not in api.learnable[self.name]['charge']:
-                            api.learnable[self.name]['charge'].append('RETURN')
-                            api.learnable[self.name]['charge'] = sorted(api.learnable[self.name]['charge'])
+                        if 'RETURN' not in _api.learnable[self.name]['charge']:
+                            _api.learnable[self.name]['charge'].append('RETURN')
+                            _api.learnable[self.name]['charge'] = sorted(_api.learnable[self.name]['charge'])
 
-            fm_idx = api.learnable[self.name]['fast'].index(fm)
-            cm1_idx = api.learnable[self.name]['charge'].index(cm1) + 1
+            fm_idx = _api.learnable[self.name]['fast'].index(fm)
+            cm1_idx = _api.learnable[self.name]['charge'].index(cm1) + 1
             parts.append(str(fm_idx))
             parts.append(str(cm1_idx))
             if cm2 is not None:
@@ -911,7 +1007,7 @@ class Pokemon(ub.NiceRepr):
                     # hack for frustration
                     cm2_idx = 0
                 else:
-                    cm2_idx = api.learnable[self.name]['charge'].index(cm2) + 1
+                    cm2_idx = _api.learnable[self.name]['charge'].index(cm2) + 1
                 parts.append(str(cm2_idx))
         else:
             parts.append('m-1-1-2')
@@ -926,6 +1022,42 @@ class Pokemon(ub.NiceRepr):
         #     pass
         code = '-'.join(parts)
         return code
+
+    def candidate_moveset(self, tmable=False):
+        """
+
+        self = Pokemon.random('mew')
+        print('self = {!r}'.format(self))
+        possible_moves = self.api.name_to_moves[self.name]
+        print('possible_moves = {!r}'.format(possible_moves))
+        """
+        variant_groups = self.api.name_to_moves[self.name]
+        candidates = {
+            'fast': set(),
+            'charged': set(),
+        }
+        for variant in variant_groups:
+            if False:
+                variant['form']
+                variant['pokemon_name']
+                variant['pokemon_id']
+                variant['charged_moves']
+                variant['elite_charged_moves']
+                variant['fast_moves']
+                variant['elite_fast_moves']
+
+            if True or variant['form'] == self.form:
+                # TODO: ensure this works
+
+                if not tmable:
+                    candidates['fast'].update(variant['elite_fast_moves'])
+                    candidates['charged'].update(variant['elite_charged_moves'])
+
+                candidates['fast'].update(variant['fast_moves'])
+                candidates['charged'].update(variant['charged_moves'])
+
+        candidates = ub.map_vals(sorted, candidates)
+        return candidates
 
 
 def calc_cp(attack, defense, stamina, level):
