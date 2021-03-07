@@ -44,6 +44,24 @@ class PogoAPI(ub.NiceRepr):
 
             'charged_moves': api.base + 'charged_moves.json',
             'fast_moves': api.base + 'fast_moves.json',
+            'type_effectiveness': api.base + 'type_effectiveness.json',
+
+            'pokemon_powerup_requirements': api.base + 'pokemon_powerup_requirements.json',
+            'pokemon_candy_to_evolve': api.base + 'pokemon_candy_to_evolve.json',
+            'pokemon_buddy_distances': api.base + 'pokemon_buddy_distances.json',
+
+            'shadow_pokemon': api.base + 'shadow_pokemon.json',
+            'pokemon_forms': api.base + 'pokemon_forms.json',
+            'pvp_exclusive_pokemon': api.base + 'pvp_exclusive_pokemon.json',
+            'galarian_pokemon': api.base + 'galarian_pokemon.json',
+            'alolan_pokemon': api.base + 'alolan_pokemon.json',
+            'shiny_pokemon': api.base + 'shiny_pokemon.json',
+            'mega_pokemon': api.base + 'mega_pokemon.json',
+            'baby_pokemon': api.base + 'baby_pokemon.json',
+            'nesting_pokemon': api.base + 'nesting_pokemon.json',
+            'released_pokemon': api.base + 'released_pokemon.json',
+            'pokemon_names': api.base + 'pokemon_names.json',
+            'api_hashes': api.base + 'api_hashes.json',
         }
         api.data = {}
         for key, url in api.routes.items():

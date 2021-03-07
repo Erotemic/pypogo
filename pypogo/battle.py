@@ -1,5 +1,6 @@
 from pypogo.pokemon import Pokemon
 import ubelt as ub
+import random
 
 
 class Environment(ub.NiceRepr):
@@ -11,6 +12,7 @@ class Environment(ub.NiceRepr):
         self.properties = {}
         self.clock = None
         self.current_timestep = None
+        self.rng = random.Random()
 
 
 class Actor(ub.NiceRepr):
@@ -48,32 +50,46 @@ class BattleZone(Environment):
     def run_step(self):
         """
         from pypogo.battle import *  # NOQA
-        self = BattleZone.random()
+
+        while True:
+            self = BattleZone.random()
+            # print('self = {}'.format(ub.repr2(self, nl=1)))
+            self.run_step()
         """
         player1, player2  = self.players
 
         mon1 = player1.pokemon[0]
         mon2 = player2.pokemon[0]
 
-        # action1 = player1.choose_action
-        # action2 = player1.choose_action
+        env = self
+        action1 = player1.choose_action(env)
+        action2 = player1.choose_action(env)
 
-        action = 'fast_move'
-        if action == 'fast_move':
-            move1 = mon1.fast_move
+        move1 = action1['move']
+        move2 = action2['move']
 
-        def compute_damage(mon1, mon2, move):
-            damage = (move['power'] * mon1.adjusted['attack']) / mon2.adjusted['defense']
-            return damage
+        # action = 'fast_move'
+        # if action == 'fast_move':
 
-        # move = mon1.fast_move
-        damage = compute_damage(mon1, mon2, move1)
+        move1 = mon1.fast_move
+        move2 = mon2.fast_move
 
+        effects = []
         effect = {
-            'damage': damage,
+            'desc': f'{mon1.name} used {move1["name"]} against {mon2.name}',
+            'damage': compute_damage(mon1, mon2, move1),
+            'target': mon2,
         }
+        effects.append(effect)
+        effect = {
+            'desc': f'{mon2.name} used {move2["name"]} against {mon1.name}',
+            'damage': compute_damage(mon2, mon1, move2),
+            'target': mon1,
+        }
+        effects.append(effect)
 
-        print('effect = {}'.format(ub.repr2(effect, nl=1)))
+        for effect in effects:
+            print('resolve effect = {}'.format(ub.repr2(effect, nl=1)))
 
 
 class Trainer(Actor):
@@ -89,6 +105,9 @@ class Trainer(Actor):
 
     def __init__(self, pokemon=[]):
         self.pokemon = pokemon
+        self.sheilds = 2
+        self.rng = random.Random()
+        self.initialize()
 
     def __nice__(self):
         return ub.repr2(self.pokemon)
@@ -101,3 +120,60 @@ class Trainer(Actor):
         ]
         self = cls(pokemon)
         return self
+
+    def initialize(self):
+        self.shields = 2
+        for mon in self.pokemon:
+            mon.hp = int(mon.adjusted['stamina'])
+            mon.feinted = False
+            mon.energy = False
+            mon.active = False
+
+        self.active_mon = self.pokemon[0]
+        self.active_mon.active = True
+
+    def choose_action(self, env):
+        """
+        env = BattleZone.random()
+        self = env.players[0]
+        self.initialize()
+        """
+        mon = self.active_mon
+        mon.fast_move
+        avail_charge_moves = [c for c in mon.charged_moves if (c['energy_delta'] + mon.energy) > 0]
+        move_cand = [mon.fast_move] + avail_charge_moves
+        # todo: swap?
+        move = self.rng.choices(move_cand)
+
+        action = {
+            'move': move,
+        }
+        return action
+
+
+def compute_damage(mon1, mon2, move):
+    attack_type = move['type']
+    defender_types = mon2.typing
+    lut = mon1.api.data['type_effectiveness']
+    effectiveness = 1
+    for def_type in defender_types:
+        effectiveness *= lut[attack_type][def_type]
+
+    # Todo calculate correctly
+    attack_buf_factor = 1.0
+    defense_debuf_factor = 1.0
+
+    attack_power = mon1.adjusted['attack'] * attack_buf_factor
+    defense_power = max(mon2.adjusted['defense'], 0.0001) / defense_debuf_factor
+
+    damage = move['power'] * attack_power / defense_power
+
+    damage = damage * effectiveness
+
+    if mon1.shadow:
+        damage = damage * 1.2
+
+    if mon2.shadow:
+        damage = damage * 1.2
+
+    return damage

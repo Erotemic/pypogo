@@ -838,6 +838,7 @@ class Pokemon(ub.NiceRepr):
             self.random(name='smeargle')
 
             self = Pokemon(name='smeargle')
+            self = Pokemon.random(name='honedge')
 
             name='smeargle'
 
@@ -849,8 +850,25 @@ class Pokemon(ub.NiceRepr):
         if rng is None:
             rng = random.Random()
 
+        if 0:
+            api = global_api()
+            for name in api.name_to_base:
+                mon = Pokemon.random(name=name)
+                flag = False
+                flag |= mon.base_stats['attack'] == 0
+                flag |= mon.base_stats['stamina'] == 0
+                flag |= mon.base_stats['defense'] == 0
+                if flag:
+                    print('mon = {}'.format(ub.repr2(mon, nl=1)))
+
         blocklist = {
-            'smeargle'
+            'smeargle',
+            'honedge',
+            'aegislash',
+            'doublade',
+            'zygarde',
+            'gourgeist',
+            'pumpkaboo',
         }
 
         while name is None or name in blocklist:
@@ -859,7 +877,6 @@ class Pokemon(ub.NiceRepr):
             valid_names = list(api.name_to_base)
             name = rng.choice(valid_names)
 
-        print('name = {!r}'.format(name))
         self = Pokemon(name)
 
         max_level = 51
