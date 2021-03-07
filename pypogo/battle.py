@@ -137,6 +137,67 @@ class Trainer(Actor):
         env = BattleZone.random()
         self = env.players[0]
         self.initialize()
+
+        Cases:
+
+           (
+
+                (
+
+                    * Your opponent is using a fast attack
+
+                    XOR
+
+                    * Your opponent is switching pokemon
+
+                    XOR
+
+                    * Your opponent is giving no inputs
+
+                )
+
+                AND OR
+
+                (
+
+                    * You are using a fast attack
+
+                    XOR
+
+                    * You are switching pokemon
+
+                    XOR
+
+                    * You are giving no inputs
+
+                )
+
+           )
+
+           XOR
+
+           * You are using a charge attack
+
+           XOR
+
+           * Your opponent using a charge attack (option to shield)
+
+           XOR
+
+           * Your pokemon has been KO-ed and you need to choose a new mon
+
+           XOR
+
+           * Your opponents pokemon has been KO-ed and you need to choose a new mon
+
+           XOR
+
+           * START STATE
+
+           XOR
+
+           * END STATE
+
         """
         mon = self.active_mon
         mon.fast_move
