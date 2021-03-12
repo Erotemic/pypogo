@@ -32,6 +32,13 @@ class BattleZone(Environment):
     def __init__(self):
         super().__init__()
         self.players = []
+        self.state = 'FAST_STATE'  #
+        self.valid_states = [
+            'START_STATE',
+            'FAST_STATE',
+            'CHARGE_STATE',
+            'END_STATE',
+        ]
 
     def __nice__(self):
         return ub.repr2({
@@ -70,9 +77,6 @@ class BattleZone(Environment):
 
         # action = 'fast_move'
         # if action == 'fast_move':
-
-        move1 = mon1.fast_move
-        move2 = mon2.fast_move
 
         effects = []
         effect = {
@@ -144,11 +148,7 @@ class Trainer(Actor):
 
                 (
 
-                    * Your opponent is using a fast attack
-
-                    XOR
-
-                    * Your opponent is switching pokemon
+                    * Your opponent is executing a fast option (attack or switch)
 
                     XOR
 
@@ -160,11 +160,7 @@ class Trainer(Actor):
 
                 (
 
-                    * You are using a fast attack
-
-                    XOR
-
-                    * You are switching pokemon
+                    * You are executing a fast option (attack or switch)
 
                     XOR
 
@@ -176,7 +172,7 @@ class Trainer(Actor):
 
            XOR
 
-           * You are using a charge attack
+           * You are using a charge attack (bubble minigame)
 
            XOR
 
@@ -199,16 +195,20 @@ class Trainer(Actor):
            * END STATE
 
         """
-        mon = self.active_mon
-        mon.fast_move
-        avail_charge_moves = [c for c in mon.charged_moves if (c['energy_delta'] + mon.energy) > 0]
-        move_cand = [mon.fast_move] + avail_charge_moves
-        # todo: swap?
-        move = self.rng.choices(move_cand)
+        if env.state == 'FAST_STATE':
+            mon = self.active_mon
+            mon.fast_move
+            avail_charge_moves = [c for c in mon.charged_moves if (c['energy_delta'] + mon.energy) > 0]
+            move_cand = [mon.fast_move] + avail_charge_moves
+            # todo: swap?
+            move = self.rng.choice(move_cand)
 
-        action = {
-            'move': move,
-        }
+            action = {
+                'move': move,
+            }
+        else:
+            action = {}
+
         return action
 
 

@@ -163,7 +163,8 @@ class PogoAPI(ub.NiceRepr):
     def __nice__(self):
         return str(list(api.routes.keys()))
 
-    def normalize_name_and_form(api, name, form=None):
+    def normalize_name_and_form(api, name, form=None, hints=''):
+        hints_ = hints.lower()
         if name.endswith('-shadow'):
             if form is None:
                 form = 'Shadow'
@@ -202,6 +203,79 @@ class PogoAPI(ub.NiceRepr):
         if form is None:
             form = 'Normal'
 
+        if name.lower().startswith('mr '):
+            name = 'mr. ' + name[:3]
+
+        if name.lower() in {'sirfetchd', 'sirfetch\'d'}:
+            name = b'sirfetch\xe2\x80\x99d'.decode('utf8')
+
+        if name.lower() in {'farfetchd', 'farfetch\'d'}:
+            name = b'farfetch\xe2\x80\x99d'.decode('utf8')
+
+        # For some pokemon we have to "choose a default form"
+        if form == 'Normal':
+            name_ = name.lower()
+            if name_ == 'cherrim':
+                form = 'sunny'
+
+            if 'galarian' in hints_:
+                form = 'galarian'
+
+            if 'alolan' in hints_:
+                form = 'alola'
+
+            if name_ == 'runerigus':
+                form = 'galarian'
+
+            if name_ == 'tornadus':
+                form = 'incarnate'
+                if 'incarnate' in hints_:
+                    form = 'incarnate'
+                elif 'therian' in hints_:
+                    form = 'therian'
+
+            if name_ == 'landorus':
+                form = 'incarnate'
+                if 'incarnate' in hints_:
+                    form = 'incarnate'
+                elif 'therian' in hints_:
+                    form = 'therian'
+
+            if name_ == 'thundurus':
+                form = 'incarnate'
+                if 'incarnate' in hints_:
+                    form = 'incarnate'
+                elif 'therian' in hints_:
+                    form = 'therian'
+
+            if name_ == 'sawsbuck':
+                form = 'autumn'
+
+            if name_ == 'darmanitan':
+                form = 'galarian_standard'
+
+            if name_ == 'gastrodon':
+                form = 'east_sea'
+
+            if name_ == 'mr. rime':
+                form = 'galarian'
+
+            if name_ == 'perrserker':
+                form = 'galarian'
+
+            if name_.startswith('sirfetch'):
+                form = 'galarian'
+
+            if name == 'obstagoon':
+                form = 'galarian'
+
+            if name == 'Giratina':
+                form = 'altered'
+                if 'altered' in hints_:
+                    form = 'altered'
+                elif 'origin' in hints_:
+                    form = 'altered'
+
         return name, form
 
     def get_info(api, name, form=None):
@@ -234,31 +308,48 @@ class PogoAPI(ub.NiceRepr):
             raise Exception('name={name}, form={form}'.format(**locals()))
 
         try:
-            infos = [
-                api.name_to_stats[name_],
-                api.name_to_evolutions[name_],
-                api.name_to_type[name_],
-                api.name_to_moves[name_]
-            ]
+            infos = {
+                'stats': api.name_to_stats[name_],
+                'evolutions': api.name_to_evolutions[name_],
+                'type': api.name_to_type[name_],
+                'moves': api.name_to_moves[name_],
+            }
         except Exception:
+            if True:
+                import xdev
+                all_names = list(api.name_to_stats.keys())
+                distances = xdev.edit_distance(name, all_names)
+                idxs = ub.argsort(distances)[0:10]
+                candidates = list(ub.take(all_names, idxs))
+                print('did you mean on of: {}?'.format(ub.repr2(candidates, nl=1)))
             raise Exception(
                 'name={name}, form={form}, name_={name_}, form_={form_}'.format(**locals()))
 
         info = {}
-        for all_infos in infos:
+        for info_type, all_infos in infos.items():
             part = None
             form_to_info = ub.group_items(all_infos, lambda _info: _info['form'].lower())
             if form_ in form_to_info:
                 parts = form_to_info[form_]
             else:
-                import warnings
-                warnings.warn('Unable to find name={} form_={} form={}'.format(name, form_, form))
-                parts = ub.peek(form_to_info.values())
+                if info_type != 'evolutions':
+                    print('info_type = {!r}'.format(info_type))
+                    print('form_to_info = {}'.format(ub.repr2(form_to_info, nl=1)))
+                    import warnings
+                    msg = 'Unable to find name={} form_={} form={}, info_type={}'.format(name, form_, form, info_type)
+                    print(msg)
+                    warnings.warn(msg)
+                    parts = ub.peek(form_to_info.values())
+                else:
+                    parts = None
 
-            if len(parts) != 1:
-                print('parts = {!r}'.format(parts))
-                raise Exception
-            part = parts[0]
+            if parts is None:
+                part = []
+            else:
+                if len(parts) != 1:
+                    print('parts = {!r}'.format(parts))
+                    raise Exception
+                part = parts[0]
             info.update(part)
 
         if 1:

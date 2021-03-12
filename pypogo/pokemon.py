@@ -34,11 +34,12 @@ class Pokemon(ub.NiceRepr):
     """
     def __init__(self, name, ivs=None, level=None, moves=None, shadow=False,
                  form=None, cp=None, autobuild=True, shiny=False,
-                 adjusted=None):
+                 adjusted=None, hints=''):
 
         self.api = global_api()
+        self.hints = hints
 
-        name, form = self.api.normalize_name_and_form(name, form)
+        name, form = self.api.normalize_name_and_form(name, form, hints=hints)
 
         self.name = name.lower()
         self.level = level
@@ -130,7 +131,7 @@ class Pokemon(ub.NiceRepr):
             aux_parts.append(shadow_glyph)
 
         elif self.form not in {'Normal', 'Shadow', 'Purified'}:
-            aux_parts.append('({})'.format(self.form))
+            aux_parts.append('{}'.format(self.form))
 
         if self.form == 'Purified':
             purified_glyph = glpyhs['purified']
