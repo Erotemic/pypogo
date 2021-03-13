@@ -1,3 +1,12 @@
+"""
+The PVPoke implementation of battle logic can be found in [1]_.
+
+References:
+    .. [1] https://github.com/pvpoke/pvpoke/blob/master/src/js/battle/Battle.js
+    .. [2] https://gamepress.gg/pokemongo/damage-mechanics
+    .. [3] https://gamepress.gg/pokemongo/evaluating-stat-boosts-and-rng
+    .. [3] https://pokemongohub.net/post/pvp/comprehensive-pvp-mechanics-guide-in-pokemon-go/
+"""
 from pypogo.pokemon import Pokemon
 import ubelt as ub
 import random
@@ -198,7 +207,7 @@ class Trainer(Actor):
         if env.state == 'FAST_STATE':
             mon = self.active_mon
             mon.fast_move
-            avail_charge_moves = [c for c in mon.charged_moves if (c['energy_delta'] + mon.energy) > 0]
+            avail_charge_moves = [c for c in mon.charge_moves if (c['energy_delta'] + mon.energy) > 0]
             move_cand = [mon.fast_move] + avail_charge_moves
             # todo: swap?
             move = self.rng.choice(move_cand)
@@ -212,29 +221,70 @@ class Trainer(Actor):
         return action
 
 
-def compute_damage(mon1, mon2, move):
-    attack_type = move['type']
-    defender_types = mon2.typing
-    lut = mon1.api.data['type_effectiveness']
+def compute_damage(mon1, mon2, move, charge=1.0):
+    """
+    Compute damage dealt by a move
+
+    Args:
+        mon1: (Pokemon): attacker
+        mon2: (Pokemon): defender
+        move: (dict): move dictionary
+        charge: (float): between 0 and 1, if this move is a charge move,
+            this is the percent of bubbles popped.
+
+    Example:
+        >>> from pypogo.battle import *  # NOQA
+        >>> mon1 = Pokemon.random('machamp', moves=['counter', 'cross chop', 'rock slide'], shadow=True).maximize(1500)
+        >>> mon2 = Pokemon.random('snorlax', shadow=True).maximize(1500)
+        >>> move = mon1.charge_moves[0]
+        >>> compute_damage(mon1, mon2, move)
+    """
+    import math
+    move_type = move['type']
+    move_power = move['power']
+
+    effectiveness_lut = mon1.api.data['type_effectiveness']
     effectiveness = 1
-    for def_type in defender_types:
-        effectiveness *= lut[attack_type][def_type]
+    for def_type in mon2.typing:
+        effectiveness *= effectiveness_lut[move_type][def_type]
 
-    # Todo calculate correctly
-    attack_buf_factor = 1.0
-    defense_debuf_factor = 1.0
+    # Attack and defense after taking IVs and level into account
+    adjusted_attack = mon1.adjusted['attack']
+    adjusted_defense = max(mon2.adjusted['defense'], 1e-5)
 
-    attack_power = mon1.adjusted['attack'] * attack_buf_factor
-    defense_power = max(mon2.adjusted['defense'], 0.0001) / defense_debuf_factor
+    stab = 1.2 if (move_type in mon1.typing) else 1.0
 
-    damage = move['power'] * attack_power / defense_power
+    num_buffs = 0
+    num_debuffs = 0
 
-    damage = damage * effectiveness
+    bonus_multiplier = 1.3  # Hard coded in game, See [3].
 
-    if mon1.shadow:
-        damage = damage * 1.2
+    # Buff factors can be [1, 1.25, 1.5, 1.75, 2.0]
+    # Buff factors can be [1, 0.8, 0.66, 0.57, 0.5]
+    buf_factor = 1 + (num_buffs / 4)
+    debuf_factor = 1 / (1 + (num_debuffs / 4))
 
-    if mon2.shadow:
-        damage = damage * 1.2
+    attack_shadow_factor = 1.2 if mon1.shadow else 1.0
+    defendse_shadow_factor = (1 / 1.2) if mon2.shadow else 1.0
+
+    attack_power = (
+        bonus_multiplier *
+        charge *
+        stab *
+        adjusted_attack *
+        buf_factor *
+        attack_shadow_factor *
+        effectiveness
+    )
+
+    defense_power = (
+        adjusted_defense *
+        debuf_factor *
+        defendse_shadow_factor
+    )
+
+    half = 0.5  # not sure why a half is in the formula
+
+    damage = math.floor(half * move_power * attack_power / defense_power) + 1
 
     return damage

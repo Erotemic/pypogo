@@ -820,14 +820,14 @@ class Pokemon(ub.NiceRepr):
         return df
 
     @classmethod
-    def random(Pokemon, name=None, level=None, ivs=None, rng=None):
+    def random(Pokemon, name=None, level=None, ivs=None, moves=None, shadow=None, rng=None):
         """
         Example:
             >>> from pypogo.pokemon import *  # NOQA
             >>> self = Pokemon.random()
             >>> print('self = {!r}'.format(self))
             >>> print('self.fast_move = {}'.format(ub.repr2(self.fast_move, nl=1)))
-            >>> print('self.charged_moves = {}'.format(ub.repr2(self.charged_moves, nl=2)))
+            >>> print('self.charge_moves = {}'.format(ub.repr2(self.charge_moves, nl=2)))
 
         Ignore:
             while True:
@@ -878,7 +878,7 @@ class Pokemon(ub.NiceRepr):
             valid_names = list(api.name_to_base)
             name = rng.choice(valid_names)
 
-        self = Pokemon(name)
+        self = Pokemon(name, shadow=shadow)
 
         max_level = 51
         if level is None:
@@ -892,10 +892,13 @@ class Pokemon(ub.NiceRepr):
         else:
             ivs = self.ivs
 
-        cands = self.candidate_moveset()
-        fast_name = rng.choice(cands['fast'])
-        charged_names = rng.sample(cands['charged'], k=min(len(cands['charged']), 2))
-        self.moves = [fast_name] + charged_names
+        if moves is None:
+            cands = self.candidate_moveset()
+            fast_name = rng.choice(cands['fast'])
+            charged_names = rng.sample(cands['charged'], k=min(len(cands['charged']), 2))
+            self.moves = [fast_name] + charged_names
+        else:
+            self.moves = moves
 
         self.populate_all()
         return self
@@ -922,7 +925,7 @@ class Pokemon(ub.NiceRepr):
             raise Exception('MUST HAVE 1-2 CHARGE MOVES')
 
         self.fast_move = fast_cand[0]
-        self.charged_moves = charged_cand[0:2]
+        self.charge_moves = charged_cand[0:2]
 
     @classmethod
     def from_pvpoke_row(Pokemon, row):
