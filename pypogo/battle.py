@@ -48,6 +48,12 @@ class BattleZone(Environment):
             'CHARGE_STATE',
             'END_STATE',
         ]
+        self.action_queue = []
+        self.timeline = []
+        self.clock = 0
+        self.delta = 500
+        self.time_limit = 240000
+        self.verbose = 1
 
     def __nice__(self):
         return ub.repr2({
@@ -63,15 +69,65 @@ class BattleZone(Environment):
         self.players = players
         return self
 
-    def run_step(self):
+    def initialize(self):
+        self.timeline = []
+        self.clock = 0
+        events = []
+        for player in self.players:
+            player.initialize()
+            events.append({
+                'desc': 'initialize {}'.format(player),
+
+            })
+        return events
+
+    def run(self, verbose=0):
+        """
+        Example:
+            self = BattleZone.random()
+            self.initialize()
+            self.time_limit = 1000
+            self.run(verbose=1)
+        """
+        self.verbose = verbose
+        events = self.initialize()
+        for event in events:
+            self.log_event(event)
+
+        ongoing = True
+        while ongoing:
+            events = self.step()
+            for event in events:
+                self.log_event(event)
+
+            if self.clock >= self.time_limit:
+                self.log_event({'desc': 'times up'})
+                ongoing = False
+
+    def log_event(self, event):
+        if self.verbose:
+            print('{}'.format(ub.repr2(event, nl=1)))
+        self.timeline.append(event)
+
+    def step(self):
         """
         from pypogo.battle import *  # NOQA
 
-        while True:
-            self = BattleZone.random()
-            # print('self = {}'.format(ub.repr2(self, nl=1)))
-            self.run_step()
+        self = BattleZone.random()
+        self.initialize()
+        self.step()
         """
+
+        if self.clock >= self.time_limit:
+            return []
+            pass
+
+        # At each step, any unblocked player should be able to add an action to
+        # the priority queue.
+
+        # Actions in the queue are then resolved in priority order, and then
+        # induce a cooldown time that blocks the actor.
+
         player1, player2  = self.players
 
         mon1 = player1.pokemon[0]
@@ -79,30 +135,36 @@ class BattleZone(Environment):
 
         env = self
         action1 = player1.choose_action(env)
-        action2 = player1.choose_action(env)
+        action2 = player2.choose_action(env)
 
         move1 = action1['move']
         move2 = action2['move']
+
+        if move1['move_type'] == 'fast' and move2['move_type'] == 'fast':
+            pass
 
         # action = 'fast_move'
         # if action == 'fast_move':
 
         effects = []
         effect = {
-            'desc': f'{mon1.name} used {move1["name"]} against {mon2.name}',
+            'desc': f'{mon1.name!r} used {move1["name"]!r} against {mon2.name!r}',
             'damage': compute_damage(mon1, mon2, move1),
             'target': mon2,
         }
         effects.append(effect)
         effect = {
-            'desc': f'{mon2.name} used {move2["name"]} against {mon1.name}',
+            'desc': f'{mon2.name!r} used {move2["name"]!r} against {mon1.name!r}',
             'damage': compute_damage(mon2, mon1, move2),
             'target': mon1,
         }
         effects.append(effect)
 
         for effect in effects:
-            print('resolve effect = {}'.format(ub.repr2(effect, nl=1)))
+            effect['target'].hp -= effect['damage']
+
+        self.clock += self.delta
+        return effects
 
 
 class Trainer(Actor):
@@ -138,12 +200,16 @@ class Trainer(Actor):
         self.shields = 2
         for mon in self.pokemon:
             mon.hp = int(mon.adjusted['stamina'])
+            mon.energy = 0
             mon.feinted = False
-            mon.energy = False
             mon.active = False
 
         self.active_mon = self.pokemon[0]
         self.active_mon.active = True
+        self.active_mon.buffs = 0
+        self.active_mon.debuffs = 0
+        self.switch_clock = 0
+        self.blocked = False
 
     def choose_action(self, env):
         """

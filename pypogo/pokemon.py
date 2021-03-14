@@ -55,6 +55,12 @@ class Pokemon(ub.NiceRepr):
         self.cp = cp
         self.adjusted = adjusted
 
+        # PVP attributes
+        self.hp = None
+        self.energy = None
+        self.buffs = None
+        self.debuffs = None
+
         self.populate_stats()
 
         if cp is None:
@@ -148,7 +154,15 @@ class Pokemon(ub.NiceRepr):
 
     def __nice__(self):
         disp_name = self.display_name()
-        info = '{}, {}, {}, {}, {}'.format(disp_name, self.cp, self.level, self.ivs, self.moves)
+        if self.hp is not None:
+            # display for PVP
+            info = '{}, {}, {}, {}, {}, {}, {}'.format(disp_name, self.hp,
+                                                       self.energy, self.cp,
+                                                       self.level, self.ivs,
+                                                       self.moves)
+        else:
+            info = '{}, {}, {}, {}, {}'.format(disp_name, self.cp, self.level,
+                                               self.ivs, self.moves)
         return info
         # return str([self.name] + self.moves + [self.level] + self.ivs)
 
@@ -905,7 +919,7 @@ class Pokemon(ub.NiceRepr):
 
     def populate_move_stats(self):
         fast_cand = []
-        charged_cand = []
+        charge_cand = []
 
         for move in self.moves:
             move = self.api.normalize(move)
@@ -914,18 +928,23 @@ class Pokemon(ub.NiceRepr):
                 fast_cand.extend(fast)
             elif move in self.api.charged_moves:
                 charged = self.api.charged_moves[move]
-                charged_cand.extend(charged)
+                charge_cand.extend(charged)
             else:
                 print('unknown move {}'.format(move))
 
         if len(fast_cand) != 1:
             raise Exception('MUST HAVE 1 FAST MOVE')
 
-        if not (0 < len(charged_cand) < 3):
+        if not (0 < len(charge_cand) < 3):
             raise Exception('MUST HAVE 1-2 CHARGE MOVES')
 
+        for move in fast_cand:
+            move['move_type'] = 'fast'
+        for move in charge_cand:
+            move['move_type'] = 'charge'
+
         self.fast_move = fast_cand[0]
-        self.charge_moves = charged_cand[0:2]
+        self.charge_moves = charge_cand[0:2]
 
     @classmethod
     def from_pvpoke_row(Pokemon, row):
