@@ -259,3 +259,38 @@ def mew():
 
     base = Pokemon('mew', ivs=[15, 12, 11]).maximize(max_cp=1500)
     print(base.league_ranking(min_iv=10))
+
+
+def cress_damage():
+    from pypogo.battle import compute_damage
+    from pypogo.pokemon import Pokemon
+    base = Pokemon.random('cresselia', moves=['psycho cut', 'moonblast', 'futuresight'])
+
+    mon1 = base
+    mon2 = Pokemon.random('snorlax')
+
+    move = base.charge_moves[0]
+    print('move = {!r}'.format(move))
+    damage = compute_damage(mon1, mon2, move, charge=1.0)
+    print('damage = {!r}'.format(damage))
+    dpe = damage / (-move['energy_delta'])
+    print('dpe = {!r}'.format(dpe))
+
+    move = base.charge_moves[1]
+    print('move = {!r}'.format(move))
+    damage = compute_damage(mon1, mon2, move, charge=1.0)
+    print('damage = {!r}'.format(damage))
+    dpe = damage / (-move['energy_delta'])
+    print('dpe = {!r}'.format(dpe))
+
+    # but that's weird, gg states in PVP for moonblast
+    power = 110
+    energy = -60
+    dpe = power * 1.00 / (-energy)
+    print('dpe = {!r}'.format(dpe))
+
+    # but that's weird, gg states in PVP for future sight
+    power = 120
+    energy = -65
+    dpe = power * 1.20 / (-energy)
+    print('dpe = {!r}'.format(dpe))

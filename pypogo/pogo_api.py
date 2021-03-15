@@ -3,6 +3,31 @@ import ubelt as ub
 import networkx as nx
 
 
+def master():
+    master_fpath = ub.grabdata('https://raw.githubusercontent.com/pokemongo-dev-contrib/pokemongo-game-master/master/versions/latest/V2_GAME_MASTER.json')
+    with open(master_fpath) as file:
+        master = json.load(file)
+
+    master.keys()
+
+    def item_type(item):
+        data = item['data']
+        if 'move' in data:
+            return 'move'
+        if 'pokemon' in data:
+            return 'pokemon'
+
+    type_to_items = ub.group_items(master['template'], key=item_type)
+
+    pokemon_items = type_to_items['pokemon']
+    move_items = type_to_items['move']
+
+    for item in move_items:
+        uid = item['data']['move']['uniqueId']
+        if 'MOONBLAST' in uid:
+            print('item = {}'.format(ub.repr2(item, nl=3)))
+
+
 def normalize(n):
     return n.upper().replace(' ', '_')
 
