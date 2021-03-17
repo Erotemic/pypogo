@@ -189,6 +189,12 @@ class PogoAPI(ub.NiceRepr):
         return str(list(api.routes.keys()))
 
     def normalize_name_and_form(api, name, form=None, hints=''):
+        """
+        Do some normalization and handle special cases
+
+        (which might only be special because of bad initial programming, better
+         use of the pogo api might make some of this not necessary)
+        """
         hints_ = hints.lower()
         if name.endswith('-shadow'):
             if form is None:
@@ -291,15 +297,15 @@ class PogoAPI(ub.NiceRepr):
             if name_.startswith('sirfetch'):
                 form = 'galarian'
 
-            if name == 'obstagoon':
+            if name_ == 'obstagoon':
                 form = 'galarian'
 
-            if name == 'Giratina':
+            if name_ == 'giratina':
                 form = 'altered'
                 if 'altered' in hints_:
                     form = 'altered'
                 elif 'origin' in hints_:
-                    form = 'altered'
+                    form = 'origin'
 
         return name, form
 

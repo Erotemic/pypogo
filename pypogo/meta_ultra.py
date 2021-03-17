@@ -130,100 +130,100 @@ machamp-shadow,COUNTER,CROSS_CHOP,ROCK_SLIDE
 scrafty_xl,COUNTER,FOUL_PLAY,POWER-UP_PUNCH
 abomasnow-shadow,POWDER_SNOW,WEATHER_BALL_ICE,ENERGY_BALL
 mandibuzz_xl,SNARL,FOUL_PLAY,AERIAL_ACE
-machamp,COUNTER,CROSS_CHOP,ROCK_SLIDE
 swampert-shadow,MUD_SHOT,HYDRO_CANNON,SLUDGE_WAVE
 politoed-shadow,MUD_SHOT,WEATHER_BALL_WATER,EARTHQUAKE
-politoed_xl,MUD_SHOT,WEATHER_BALL_WATER,EARTHQUAKE
 sirfetchd,COUNTER,LEAF_BLADE,BRAVE_BIRD
 talonflame_xl,INCINERATE,BRAVE_BIRD,FLAME_CHARGE
-abomasnow_xl,POWDER_SNOW,WEATHER_BALL_ICE,ENERGY_BALL
 umbreon_xl,SNARL,FOUL_PLAY,LAST_RESORT
 venusaur-shadow,VINE_WHIP,FRENZY_PLANT,SLUDGE_BOMB
 ferrothorn_xl,BULLET_SEED,POWER_WHIP,FLASH_CANNON
+meganium_xl,VINE_WHIP,FRENZY_PLANT,EARTHQUAKE
 skarmory_xl,AIR_SLASH,BRAVE_BIRD,SKY_ATTACK
 drifblim_xl,HEX,ICY_WIND,SHADOW_BALL
-venusaur,VINE_WHIP,FRENZY_PLANT,SLUDGE_BOMB
 escavalier,COUNTER,DRILL_RUN,MEGAHORN
-meganium_xl,VINE_WHIP,FRENZY_PLANT,EARTHQUAKE
 altaria_xl,DRAGON_BREATH,SKY_ATTACK,DRAGON_PULSE
 magnezone-shadow,SPARK,WILD_CHARGE,MIRROR_SHOT
 ninetales_alolan_xl,POWDER_SNOW,WEATHER_BALL_ICE,PSYSHOCK
 lapras,ICE_SHARD,SURF,SKULL_BASH
 perrserker_xl,SHADOW_CLAW,CLOSE_COMBAT,FOUL_PLAY
-gallade,CONFUSION,CLOSE_COMBAT,LEAF_BLADE
 snorlax-shadow,LICK,BODY_SLAM,SUPERPOWER
-magnezone,SPARK,WILD_CHARGE,MIRROR_SHOT
-snorlax,LICK,BODY_SLAM,SUPERPOWER
+gallade,CONFUSION,CLOSE_COMBAT,LEAF_BLADE
 gengar,SHADOW_CLAW,SHADOW_BALL,SHADOW_PUNCH
 hariyama,COUNTER,CLOSE_COMBAT,HEAVY_SLAM
 electivire-shadow,THUNDER_SHOCK,WILD_CHARGE,ICE_PUNCH
-swampert,MUD_SHOT,HYDRO_CANNON,SLUDGE_WAVE
-politoed,MUD_SHOT,WEATHER_BALL_WATER,EARTHQUAKE
-abomasnow-shadow,POWDER_SNOW,WEATHER_BALL_ICE,ENERGY_BALL
-blaziken,COUNTER,BLAZE_KICK,BLAST_BURN
-lapras,ICE_SHARD,SURF,SKULL_BASH
 toxicroak_xl,COUNTER,MUD_BOMB,SLUDGE_BOMB
-jellicent,BUBBLE,BUBBLE_BEAM,SHADOW_BALL
-ninetales-shadow,FIRE_SPIN,WEATHER_BALL_FIRE,PSYSHOCK
+blaziken,COUNTER,BLAZE_KICK,BLAST_BURN
 heracross,COUNTER,CLOSE_COMBAT,MEGAHORN
-toxicroak,COUNTER,MUD_BOMB,SLUDGE_BOMB
-dragonite-shadow,DRAGON_BREATH,DRAGON_CLAW,HURRICANE
 galvantula_xl,VOLT_SWITCH,LUNGE,DISCHARGE
+dragonite-shadow,DRAGON_BREATH,DRAGON_CLAW,HURRICANE
 raichu_xl,VOLT_SWITCH,WILD_CHARGE,BRICK_BREAK
-empoleon,WATERFALL,HYDRO_CANNON,DRILL_PECK
-lapras-shadow,ICE_SHARD,SURF,SKULL_BASH
-lucario,COUNTER,CLOSE_COMBAT,SHADOW_BALL
-obstagoon,COUNTER,NIGHT_SLASH,GUNK_SHOT
 clefable_xl,CHARM,METEOR_MASH,MOONBLAST
 hypno_xl,CONFUSION,THUNDER_PUNCH,SHADOW_BALL
-electivire,THUNDER_SHOCK,WILD_CHARGE,ICE_PUNCH
+obstagoon,COUNTER,NIGHT_SLASH,GUNK_SHOT
+empoleon,WATERFALL,HYDRO_CANNON,DRILL_PECK
+lucario,COUNTER,CLOSE_COMBAT,SHADOW_BALL
 muk_alolan,SNARL,DARK_PULSE,SLUDGE_WAVE
 chesnaught,VINE_WHIP,SUPERPOWER,ENERGY_BALL
-dragonite,DRAGON_BREATH,DRAGON_CLAW,HURRICANE
-meganium,VINE_WHIP,FRENZY_PLANT,EARTHQUAKE
-flygon-shadow,MUD_SHOT,DRAGON_CLAW,EARTH_POWER
 gyarados-shadow,DRAGON_BREATH,AQUA_TAIL,CRUNCH
 bouffalant,MUD_SHOT,STOMP,SKULL_BASH
+flygon-shadow,MUD_SHOT,DRAGON_CLAW,EARTH_POWER
 bronzong_xl,CONFUSION,PSYSHOCK,BULLDOZE
-abomasnow,POWDER_SNOW,WEATHER_BALL_ICE,ENERGY_BALL
+poliwrath,MUD_SHOT,DYNAMIC_PUNCH,ICE_PUNCH
 honchkrow,SNARL,BRAVE_BIRD,SKY_ATTACK
-ninetales_xl,FIRE_SPIN,SOLAR_BEAM,WEATHER_BALL_FIRE
-drifblim,HEX,ICY_WIND,SHADOW_BALL
-perrserker,SHADOW_CLAW,CLOSE_COMBAT,FOUL_PLAY
-raichu_alolan_xl,VOLT_SWITCH,WILD_CHARGE,THUNDER_PUNCH
+tangrowth,VINE_WHIP,POWER_WHIP,ROCK_SLIDE
 typhlosion,INCINERATE,BLAST_BURN,SOLAR_BEAM
 charizard,FIRE_SPIN,BLAST_BURN,DRAGON_CLAW
-flygon,MUD_SHOT,DRAGON_CLAW,EARTH_POWER
-poliwrath,MUD_SHOT,DYNAMIC_PUNCH,ICE_PUNCH
-scrafty,COUNTER,FOUL_PLAY,POWER-UP_PUNCH
-tangrowth,VINE_WHIP,POWER_WHIP,ROCK_SLIDE
-poliwrath-shadow,MUD_SHOT,DYNAMIC_PUNCH,ICE_PUNCH
 gliscor,WING_ATTACK,NIGHT_SLASH,EARTHQUAKE
-gallade-shadow,CONFUSION,CLOSE_COMBAT,LEAF_BLADE
 primeape,COUNTER,CLOSE_COMBAT,CROSS_CHOP
 hitmonchan,COUNTER,CLOSE_COMBAT,ICE_PUNCH
-sandslash_alolan_xl,POWDER_SNOW,ICE_PUNCH,BULLDOZE
 ampharos,VOLT_SWITCH,THUNDER_PUNCH,FOCUS_BLAST
-hitmonchan-shadow,COUNTER,CLOSE_COMBAT,ICE_PUNCH
-gyarados,DRAGON_BREATH,AQUA_TAIL,CRUNCH
-charizard-shadow,FIRE_SPIN,BLAST_BURN,DRAGON_CLAW
-clefable,CHARM,METEOR_MASH,MOONBLAST
+sandslash_alolan_xl,POWDER_SNOW,ICE_PUNCH,BULLDOZE
 sceptile,BULLET_SEED,LEAF_BLADE,EARTHQUAKE
-kingdra,DRAGON_BREATH,OUTRAGE,OCTAZOOKA
 togekiss,CHARM,AERIAL_ACE,FLAMETHROWER
+kingdra,DRAGON_BREATH,OUTRAGE,OCTAZOOKA
 shiftry-shadow,SNARL,LEAF_BLADE,FOUL_PLAY
 zebstrika,SPARK,WILD_CHARGE,FLAME_CHARGE
-gliscor-shadow,WING_ATTACK,NIGHT_SLASH,EARTHQUAKE
-ferrothorn,BULLET_SEED,POWER_WHIP,FLASH_CANNON
-politoed-shadow,MUD_SHOT,WEATHER_BALL_WATER,SURF
 pinsir-shadow,FURY_CUTTER,CLOSE_COMBAT,X-SCISSOR
-shiftry_xl,SNARL,LEAF_BLADE,FOUL_PLAY
 excadrill,MUD_SHOT,DRILL_RUN,ROCK_SLIDE
-stunfisk_galarian,MUD_SHOT,ROCK_SLIDE,EARTHQUAKE
-talonflame,INCINERATE,BRAVE_BIRD,FLAME_CHARGE
 crustle_xl,SMACK_DOWN,ROCK_SLIDE,X-SCISSOR
-ampharos-shadow,VOLT_SWITCH,THUNDER_PUNCH,FOCUS_BLAST
-muk-shadow,POISON_JAB,THUNDER_PUNCH,DARK_PULSE
+magneton-shadow,THUNDER_SHOCK,MAGNET_BOMB,DISCHARGE
+granbull_xl,CHARM,CLOSE_COMBAT,CRUNCH
+magmortar-shadow,KARATE_CHOP,FIRE_PUNCH,THUNDERBOLT
+seismitoad,MUD_SHOT,EARTH_POWER,MUDDY_WATER
+golem_alolan,VOLT_SWITCH,ROCK_BLAST,WILD_CHARGE
+froslass_xl,POWDER_SNOW,AVALANCHE,SHADOW_BALL
+breloom,COUNTER,SEED_BOMB,SLUDGE_BOMB
+feraligatr,WATERFALL,HYDRO_CANNON,CRUNCH
+serperior_xl,VINE_WHIP,GRASS_KNOT,AERIAL_ACE
+hitmontop,COUNTER,CLOSE_COMBAT,STONE_EDGE
+scizor-shadow,BULLET_PUNCH,NIGHT_SLASH,IRON_HEAD
+roserade,BULLET_SEED,WEATHER_BALL_FIRE,GRASS_KNOT
+staraptor,WING_ATTACK,BRAVE_BIRD,CLOSE_COMBAT
+ludicolo_xl,BUBBLE,ENERGY_BALL,ICE_BEAM
+rapidash_galarian,PSYCHO_CUT,BODY_SLAM,PSYCHIC
+conkeldurr,COUNTER,DYNAMIC_PUNCH,STONE_EDGE
+darmanitan,INCINERATE,ROCK_SLIDE,OVERHEAT
+eelektross,SPARK,DRAGON_CLAW,THUNDERBOLT
+dewgong_xl,ICE_SHARD,ICY_WIND,WATER_PULSE
+luxray,SPARK,WILD_CHARGE,CRUNCH
+vaporeon,WATER_GUN,AQUA_TAIL,LAST_RESORT
+magmar-shadow,KARATE_CHOP,FIRE_PUNCH,FLAMETHROWER
+forretress,BUG_BITE,MIRROR_SHOT,EARTHQUAKE
+haxorus,COUNTER,DRAGON_CLAW,NIGHT_SLASH
+mamoswine,POWDER_SNOW,AVALANCHE,STONE_EDGE
+arcanine-shadow,SNARL,WILD_CHARGE,FLAMETHROWER
+hydreigon,DRAGON_BREATH,DARK_PULSE,DRAGON_PULSE
+durant,BUG_BITE,X-SCISSOR,STONE_EDGE
+victreebel-shadow,RAZOR_LEAF,LEAF_BLADE,SLUDGE_BOMB
+vileplume-shadow,RAZOR_LEAF,SLUDGE_BOMB,MOONBLAST
+skuntank,POISON_JAB,CRUNCH,SLUDGE_BOMB
+nidoqueen,POISON_JAB,EARTH_POWER,STONE_EDGE
+porygon2,LOCK_ON,TRI_ATTACK,ZAP_CANNON
+probopass_xl,SPARK,ROCK_SLIDE,THUNDERBOLT
+klinklang,THUNDER_SHOCK,MIRROR_SHOT,ZAP_CANNON
+relicanth,WATER_GUN,AQUA_TAIL,ANCIENT_POWER
+scolipede,POISON_JAB,X-SCISSOR,MEGAHORN
+bellossom,BULLET_SEED,LEAF_BLADE,RETURN
 """
 
 # if 0:
@@ -254,14 +254,13 @@ muk-shadow,POISON_JAB,THUNDER_PUNCH,DARK_PULSE
 #     (set(map(lambda x: x.name, ub.compress(meta_mons, (lvl_49_5 < 500))))) - (set(map(lambda x: x.name, ub.compress(meta_mons, (lvl_50_151414 < 500)))))
 
 
-
-
 # umbreon,SNARL,FOUL_PLAY,LAST_RESORT
 # talonflame,INCINERATE,BRAVE_BIRD,FLAME_CHARGE
 
 def read_ultra_rankings():
     import ubelt as ub
-    fpath = ub.expandpath('~/code/pypogo/pypogo/ultra_premier_rankings.csv')
+    fpath = '/home/joncrall/Downloads/premier Rankings (1).csv'
+    # fpath = ub.expandpath('~/code/pypogo/pypogo/ultra_premier_rankings.csv')
     import pandas as pd
     data = pd.read_csv(fpath)
     from pypogo.pokemon import Pokemon
@@ -275,7 +274,6 @@ def read_ultra_rankings():
         parts = orig_name.split(' (')
         name = parts[0]
         suffix = ' ('.join(parts[1:]).lower()
-        form = None
         shadow = 'shadow' in suffix
 
         moves = [row['Fast Move'], row['Charged Move 1'], row['Charged Move 2']]
@@ -288,49 +286,6 @@ def read_ultra_rankings():
             mon.maximize(2500, ivs=[10, 10, 10], max_level=40)
 
         meta_mons.append(mon)
-
-    def to_pvpoke_import_line(self):
-        name = self.name.replace('’', '')
-
-        if name == 'ho-oh':
-            name = 'ho_oh'
-
-        pvpoke_id = name
-
-        only_galar = {
-            'perrserker',
-            'farfetchd',
-            'sirfetchd',
-            'obstagoon',
-            'mr. rime',
-        }
-
-        if self.form.lower() == 'galarian':
-            if name not in only_galar:
-                pvpoke_id = pvpoke_id + '_galarian'
-
-        if self.form.lower() == 'alola':
-            pvpoke_id = pvpoke_id + '_alolan'
-
-        if mon.form in {'altered', 'origin'}:
-            pvpoke_id = pvpoke_id + '_' + mon.form
-
-        if self.level > 41:
-            pvpoke_id += '_xl'
-
-        if self.shadow:
-            pvpoke_id = name + '-shadow'
-
-        fixup = {
-            'FUTURE_SIGHT': 'FUTURESIGHT',
-        }
-        parts = []
-        for move in self.moves:
-            part = move.upper().replace(' ', '_').replace(')', '').replace('(', '')
-            part = fixup.get(part, part)
-            parts.append(part)
-        line = ','.join([pvpoke_id] + parts)
-        return line
 
     blocklist = {
         'zangoose',
@@ -345,13 +300,16 @@ def read_ultra_rankings():
         'mewtwo',  # TODO armored
     }
 
+    seen = set()
+
     i = 0
     mon_iter = iter(meta_mons)
     # while i < 30:
     while i < 100:
         mon = next(mon_iter)
-        self = mon
-        if mon.name not in blocklist:
-            line = to_pvpoke_import_line(mon)
-            print(line)
-            i += 1
+        if mon.name not in seen:
+            seen.add(mon.name)
+            if mon.name not in blocklist:
+                line = mon.to_pvpoke_import_line()
+                print(line)
+                i += 1

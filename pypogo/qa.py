@@ -248,10 +248,15 @@ def plot_stats_comparison():
         kwplot.set_figtitle('Best Adjusted Stats for {}'.format(key))
 
 
-def mew():
+def floor_iv_ranks():
     from pypogo.pokemon import Pokemon
     base = Pokemon('mew')
     df = base.league_ranking_table(max_cp=1500, min_iv=10)
+    print(df.to_string())
+
+    from pypogo.pokemon import Pokemon
+    base = Pokemon('Giratina', hints='origin', ivs=[13, 14, 15])
+    df = base.league_ranking_table(max_cp=2500, min_iv=10)
     print(df.to_string())
 
     base = Pokemon('mew', ivs=[10, 14, 15]).maximize(max_cp=1500)

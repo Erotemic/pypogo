@@ -78,7 +78,7 @@ class Pokemon(ub.NiceRepr):
             'name': self.name,
             'ivs': self.ivs,
             'level': self.level,
-            'form': self.formself.moves,
+            'form': self.form,
             'shadow': self.shadow,
             'shiny': self.shiny,
             'moves': self.moves,
@@ -275,6 +275,26 @@ class Pokemon(ub.NiceRepr):
         new = self.copy(**overwrite)
         return new
 
+    def alternate_forms(self):
+        """
+        Example:
+            >>> self = Pokemon('darmanitan')
+            >>> list(self.alternate_forms())
+
+            >>> self = Pokemon('giratina')
+            >>> list(self.alternate_forms())
+
+            >>> self = Pokemon('castform')
+            >>> list(self.alternate_forms())
+        """
+        forms = []
+        for info in self.api.name_to_stats[self.name]:
+            forms.append(info['form'])
+
+        for form in forms:
+            other = Pokemon(self.name, form=form)
+            yield other
+
     def family(self, ancestors=True, node=False, onlyadj=False):
         """
         Get other members of this pokemon family
@@ -283,20 +303,14 @@ class Pokemon(ub.NiceRepr):
             Pokemon: other members of this family
 
         Ignore:
-            self = Pokemon('gastly', ivs=[6, 13, 15])
-            self = Pokemon('haunter', ivs=[6, 13, 15])
-            self = Pokemon('gengar', ivs=[6, 13, 15])
-            list(self.family())
+            >>> self = Pokemon('gengar', ivs=[6, 13, 15])
+            >>> list(self.family())
 
-            self = Pokemon('magikarp', ivs=[6, 13, 15])
-            list(self.family())
+            >>> self = Pokemon('eevee', ivs=[6, 13, 15])
+            >>> list(self.family(onlyadj=True))
 
-            self = Pokemon('eevee', ivs=[6, 13, 15])
-            list(self.family(onlyadj=True))
-
-            self = Pokemon('ralts', ivs=[6, 13, 15], shadow=True)
-            list(self.family(onlyadj=True))
-            list(self.family())
+            >>> self = Pokemon('ralts', ivs=[6, 13, 15], shadow=True)
+            >>> list(self.family())
         """
         blocklist = set()
         if not node:
@@ -991,6 +1005,76 @@ class Pokemon(ub.NiceRepr):
 
         self = Pokemon(name, level=level, ivs=ivs, moves=moves, shadow=shadow)
         return self
+
+    def to_pvpoke_import_line(self):
+        """
+        Text suitable for import into pvpoke
+
+        Example
+            >>> self = Pokemon('darmanitan')
+            >>> for mon in self.alternate_forms():
+            >>>     print('mon = {!r}'.format(mon))
+            >>>     print(mon.to_pvpoke_import_line())
+
+            >>> self = Pokemon('giratina')
+            >>> list(self.alternate_forms())
+
+        Ignore:
+            from pypogo.pokemon import *  # NOQA
+            api = global_api()
+
+            api.data['pokemon_forms']
+
+        """
+        name = self.name.replace('’', '')
+
+        # have to take care of a lot of special cases
+        if name == 'ho-oh':
+            name = 'ho_oh'
+
+        pvpoke_id = name
+
+        only_galar = {
+            'perrserker',
+            'farfetchd',
+            'sirfetchd',
+            'obstagoon',
+            'mr. rime',
+        }
+        form_ = self.form.lower()
+
+        form_map = {
+            'alola': 'alolan',
+            'east_sea': 'east',
+            'west_sea': 'west',
+            'normal': '',
+            'shadow': '',
+        }
+        pvpoke_form = form_map.get(form_, form_)
+
+        if pvpoke_form == 'galarian' and name in only_galar:
+            pvpoke_form = ''
+
+        if pvpoke_form:
+            pvpoke_id = '{}_{}'.format(pvpoke_id, pvpoke_form)
+
+        if self.level is not None and self.level > 41:
+            pvpoke_id += '_xl'
+
+        if self.shadow:
+            pvpoke_id = name + '-shadow'
+
+        fixup = {
+            'FUTURE_SIGHT': 'FUTURESIGHT',
+        }
+        parts = []
+        if self.moves is not None:
+            for move in self.moves:
+                part = move.upper().replace(' ', '_').replace(')', '').replace('(', '')
+                part = fixup.get(part, part)
+                parts.append(part)
+        line = ','.join([pvpoke_id] + parts)
+        return line
 
     def to_pvpoke_url(self):
         parts = []
