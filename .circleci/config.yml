@@ -21,8 +21,8 @@ workflows:
       - test-minimal-3.7
       - test-minimal-3.6
 
-      - test-minimal-pypy3
-      - test-full-pypy3
+      #- test-minimal-pypy3
+      #- test-full-pypy3
 
 jobs:
 

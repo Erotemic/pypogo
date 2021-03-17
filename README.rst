@@ -13,8 +13,11 @@ This module interfaces with ``https://pogoapi.net/api/v1/`` to obtain data like
 pokemon stats and stuff. It can currently do CP calculations, and check the
 rank of IVs based on the stats product of the mons at various levels.
 
-Battle simulation and other statistics like knowing the cost of powering up a
-particular mon to PVP level given its IV ranking would be interesting.
+I'm currently working on a battle simulator, and I plan to train agents to play
+PVP using neural networks and reinforcement learning. But it will be a while
+before that's done.
+
+In the meantime, there are still useful things you can do with this package.
 
 The main way to interface is using the ``Pokemon`` class. 
 
