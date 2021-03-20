@@ -6,6 +6,22 @@ References:
     .. [2] https://gamepress.gg/pokemongo/damage-mechanics
     .. [3] https://gamepress.gg/pokemongo/evaluating-stat-boosts-and-rng
     .. [3] https://pokemongohub.net/post/pvp/comprehensive-pvp-mechanics-guide-in-pokemon-go/
+
+
+    .. [4] https://en.wikipedia.org/wiki/Reinforcement_learning
+    .. [4] https://en.wikipedia.org/wiki/Deep_reinforcement_learning
+
+
+
+Basic components of Reinforcement Learning:
+    * An environment: E, with a state and space-time grid
+    * A set set of actors: {A_i}, each with a state
+    * Each actor A has a policy A.P.
+    * At each timestep each actor makes a decision based on its policy
+    * Actions modify the state of the environment and other actors
+    * Changes in state may generate a reward R
+    * Rewards R may be used to compute gradient wrt actor decision functions
+
 """
 from pypogo.pokemon import Pokemon
 import ubelt as ub
@@ -51,7 +67,7 @@ class BattleZone(Environment):
         self.action_queue = []
         self.timeline = []
         self.clock = 0
-        self.delta = 500
+        self.tic_delta = 500
         self.time_limit = 240000
         self.verbose = 1
 
@@ -168,7 +184,7 @@ class BattleZone(Environment):
                 v = max(-max_stat_delta, min(max_stat_delta, v))
                 mod['target'].modifiers[stat] = v
 
-        self.clock += self.delta
+        self.clock += self.tic_delta
         return effects
 
 
@@ -371,7 +387,7 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
         plt.clf()
         plt.plot(x, y, 'b-o', label='real')
         plt.plot(x, y_nat, 'r-o', label='natural')
-        plt.plot(x, y - y_nat, 'r-o', label='nat_delta')
+        plt.plot(x, np.abs(y - y_nat), 'r-o', label='nat_abs_delta')
         plt.plot(x, left_y, '--', label='left-y')
         plt.plot(x, right_y, '--', label='right-y')
 
@@ -380,8 +396,6 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
 
         plt.plot(x_hat, y_hat, 'g--', label='fit')
         plt.legend()
-
-
 
     def modifier_factor(delta):
         if delta > 0:
@@ -415,7 +429,6 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
 
     damage = math.floor(half * move_power * attack_power / defense_power) + 1
 
-    import random
     if rng is None:
         rng = random.Random()
 
