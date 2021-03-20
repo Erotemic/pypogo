@@ -58,8 +58,10 @@ class Pokemon(ub.NiceRepr):
         # PVP attributes
         self.hp = None
         self.energy = None
-        self.buffs = None
-        self.debuffs = None
+        self.modifiers = {
+            'attack': 0,
+            'defense': 0,
+        }
 
         self.populate_stats()
 
@@ -854,8 +856,8 @@ class Pokemon(ub.NiceRepr):
             >>> from pypogo.pokemon import *  # NOQA
             >>> self = Pokemon.random()
             >>> print('self = {!r}'.format(self))
-            >>> print('self.fast_move = {}'.format(ub.repr2(self.fast_move, nl=1)))
-            >>> print('self.charge_moves = {}'.format(ub.repr2(self.charge_moves, nl=2)))
+            >>> print('self.pve_fast_move = {}'.format(ub.repr2(self.pve_fast_move, nl=1)))
+            >>> print('self.pvp_charge_moves = {}'.format(ub.repr2(self.pvp_charge_moves, nl=2)))
 
         Ignore:
             while True:
@@ -932,33 +934,71 @@ class Pokemon(ub.NiceRepr):
         return self
 
     def populate_move_stats(self):
-        fast_cand = []
-        charge_cand = []
+        """
+        Example:
+            >>> self = Pokemon('medicham', moves=['counter', 'power_up_punch'])
+            >>> self.populate_move_stats()
+            >>> self.pvp_fast_move
+            >>> print('self.pvp_fast_move = {!r}'.format(self.pvp_fast_move))
+            >>> self.pve_fast_move
+            >>> print('self.pve_fast_move = {!r}'.format(self.pve_fast_move))
+        """
+        if self.moves is None:
+            raise Exception('no moves specified on this mon')
+        pve_fast_cand = []
+        pve_charge_cand = []
+        pvp_fast_cand = []
+        pvp_charge_cand = []
 
         for move in self.moves:
             move = self.api.normalize(move)
-            if move in self.api.fast_moves:
-                fast = self.api.fast_moves[move]
-                fast_cand.extend(fast)
-            elif move in self.api.charged_moves:
-                charged = self.api.charged_moves[move]
-                charge_cand.extend(charged)
+            if move in self.api.pve_fast_moves:
+                fast = self.api.pve_fast_moves[move]
+                pve_fast_cand.extend(fast)
+            elif move in self.api.pve_charged_moves:
+                charged = self.api.pve_charged_moves[move]
+                pve_charge_cand.extend(charged)
             else:
-                print('unknown move {}'.format(move))
+                raise KeyError('unknown move {}'.format(move))
+            if move in self.api.pvp_fast_moves:
+                fast = self.api.pvp_fast_moves[move]
+                pvp_fast_cand.extend(fast)
+            elif move in self.api.pvp_charged_moves:
+                charged = self.api.pvp_charged_moves[move]
+                pvp_charge_cand.extend(charged)
+            else:
+                raise KeyError('unknown move {}'.format(move))
 
-        if len(fast_cand) != 1:
+        if len(pve_fast_cand) != 1:
             raise Exception('MUST HAVE 1 FAST MOVE')
 
-        if not (0 < len(charge_cand) < 3):
+        if not (0 < len(pve_charge_cand) < 3):
             raise Exception('MUST HAVE 1-2 CHARGE MOVES')
 
-        for move in fast_cand:
-            move['move_type'] = 'fast'
-        for move in charge_cand:
-            move['move_type'] = 'charge'
+        if len(pvp_fast_cand) != 1:
+            raise Exception('MUST HAVE 1 FAST MOVE')
 
-        self.fast_move = fast_cand[0]
-        self.charge_moves = charge_cand[0:2]
+        if not (0 < len(pvp_charge_cand) < 3):
+            raise Exception('MUST HAVE 1-2 CHARGE MOVES')
+
+        for move in pve_fast_cand:
+            move['move_type'] = 'fast'
+            move['move_env'] = 'pve'
+        for move in pve_charge_cand:
+            move['move_type'] = 'charge'
+            move['move_env'] = 'pve'
+
+        for move in pvp_fast_cand:
+            move['move_type'] = 'fast'
+            move['move_env'] = 'pvp'
+        for move in pvp_charge_cand:
+            move['move_type'] = 'charge'
+            move['move_env'] = 'pvp'
+
+        self.pve_fast_move = pve_fast_cand[0]
+        self.pve_charge_moves = pve_charge_cand[0:2]
+        self.pvp_fast_move = pvp_fast_cand[0]
+        self.pvp_charge_moves = pvp_charge_cand[0:2]
 
     @classmethod
     def from_pvpoke_row(Pokemon, row):

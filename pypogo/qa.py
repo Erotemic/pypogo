@@ -258,6 +258,7 @@ def floor_iv_ranks():
     base = Pokemon('Giratina', hints='origin', ivs=[13, 14, 15])
     df = base.league_ranking_table(max_cp=2500, min_iv=10)
     print(df.to_string())
+    print(base.league_ranking(max_cp=2500, min_iv=10))
 
     base = Pokemon('mew', ivs=[10, 14, 15]).maximize(max_cp=1500)
     print(base.league_ranking(min_iv=10))
@@ -267,35 +268,25 @@ def floor_iv_ranks():
 
 
 def cress_damage():
-    from pypogo.battle import compute_damage
+    from pypogo.battle import compute_move_effect
     from pypogo.pokemon import Pokemon
-    base = Pokemon.random('cresselia', moves=['psycho cut', 'moonblast', 'futuresight'])
+    base = Pokemon.random('cresselia', moves=['psycho cut', 'moonblast', 'futuresight']).maximize(2500)
 
     mon1 = base
-    mon2 = Pokemon.random('snorlax')
+    mon2 = Pokemon.random('snorlax').maximize(2500)
 
-    move = base.charge_moves[0]
+    move = base.pvp_charge_moves[0]
     print('move = {!r}'.format(move))
-    damage = compute_damage(mon1, mon2, move, charge=1.0)
+    effect = compute_move_effect(mon1, mon2, move, charge=1.0)
+    damage = effect['damage']
     print('damage = {!r}'.format(damage))
     dpe = damage / (-move['energy_delta'])
     print('dpe = {!r}'.format(dpe))
 
-    move = base.charge_moves[1]
+    move = base.pvp_charge_moves[1]
     print('move = {!r}'.format(move))
-    damage = compute_damage(mon1, mon2, move, charge=1.0)
+    effect = compute_move_effect(mon1, mon2, move, charge=1.0)
+    damage = effect['damage']
     print('damage = {!r}'.format(damage))
     dpe = damage / (-move['energy_delta'])
-    print('dpe = {!r}'.format(dpe))
-
-    # but that's weird, gg states in PVP for moonblast
-    power = 110
-    energy = -60
-    dpe = power * 1.00 / (-energy)
-    print('dpe = {!r}'.format(dpe))
-
-    # but that's weird, gg states in PVP for future sight
-    power = 120
-    energy = -65
-    dpe = power * 1.20 / (-energy)
     print('dpe = {!r}'.format(dpe))

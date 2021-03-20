@@ -29,7 +29,7 @@ def master():
 
 
 def normalize(n):
-    return n.upper().replace(' ', '_')
+    return n.lower().replace(' ', '_')
 
 
 class PogoAPI(ub.NiceRepr):
@@ -53,10 +53,6 @@ class PogoAPI(ub.NiceRepr):
         >>> print(ub.repr2(api.get_info(name)))
         >>> name = 'stunfisk_galarian'
         >>> print(ub.repr2(api.get_info(name)))
-
-        api.data['current_pokemon_moves']
-
-        api
     """
     def __init__(api):
         api.base = 'https://pogoapi.net/api/v1/'
@@ -87,6 +83,9 @@ class PogoAPI(ub.NiceRepr):
             'released_pokemon': api.base + 'released_pokemon.json',
             'pokemon_names': api.base + 'pokemon_names.json',
             'api_hashes': api.base + 'api_hashes.json',
+
+            'pvp_fast_moves': api.base.replace('v1/', 'dev/pvp_fast_moves.json'),
+            'pvp_charged_moves': api.base.replace('v1/', 'dev/pvp_charged_moves.json'),
         }
         api.data = {}
         for key, url in api.routes.items():
@@ -155,19 +154,28 @@ class PogoAPI(ub.NiceRepr):
 
         api.name_to_evolutions = _name_to_evolutions
 
-        api.fast_moves = ub.group_items(
+        api.pve_fast_moves = ub.group_items(
             api.data['fast_moves'],
             lambda item: normalize(item['name'].lower()))
 
-        api.charged_moves = ub.group_items(
+        api.pve_charged_moves = ub.group_items(
             api.data['charged_moves'],
             lambda item: normalize(item['name'].lower()))
 
+        api.pvp_fast_moves = ub.group_items(
+            api.data['pvp_fast_moves'],
+            lambda item: normalize(item['name'].lower()))
+
+        api.pvp_charged_moves = ub.group_items(
+            api.data['pvp_charged_moves'],
+            lambda item: normalize(item['name'].lower()))
+
         if 0:
-            ub.map_vals(len, api.fast_moves)
-            ub.map_vals(len, api.charged_moves)
+            ub.map_vals(len, api.pve_fast_moves)
+            ub.map_vals(len, api.pve_charged_moves)
 
         api.learnable = {
+            # TODO: remove
             'stunfisk_galarian': {
                 'fast': [
                     'MUD_SHOT',
@@ -384,6 +392,7 @@ class PogoAPI(ub.NiceRepr):
             info.update(part)
 
         if 1:
+            # TODO: remove
             fast_moves = set()
             charge_moves = set()
 

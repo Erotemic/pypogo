@@ -85,8 +85,10 @@ class BattleZone(Environment):
         """
         Example:
             self = BattleZone.random()
+            mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
+            mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
             self.initialize()
-            self.time_limit = 1000
+            self.time_limit = 10000
             self.run(verbose=1)
         """
         self.verbose = verbose
@@ -114,8 +116,12 @@ class BattleZone(Environment):
         from pypogo.battle import *  # NOQA
 
         self = BattleZone.random()
+        mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
+        mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
         self.initialize()
         self.step()
+        print(self.players[0].pokemon[0].hp)
+        print(self.players[1].pokemon[0].hp)
         """
 
         if self.clock >= self.time_limit:
@@ -143,25 +149,24 @@ class BattleZone(Environment):
         if move1['move_type'] == 'fast' and move2['move_type'] == 'fast':
             pass
 
+        # Need to figure out the right quing system
+
         # action = 'fast_move'
         # if action == 'fast_move':
 
         effects = []
-        effect = {
-            'desc': f'{mon1.name!r} used {move1["name"]!r} against {mon2.name!r}',
-            'damage': compute_damage(mon1, mon2, move1),
-            'target': mon2,
-        }
-        effects.append(effect)
-        effect = {
-            'desc': f'{mon2.name!r} used {move2["name"]!r} against {mon1.name!r}',
-            'damage': compute_damage(mon2, mon1, move2),
-            'target': mon1,
-        }
-        effects.append(effect)
+        effects.append(compute_move_effect(mon1, mon2, move1))
+        effects.append(compute_move_effect(mon2, mon1, move2))
 
         for effect in effects:
             effect['target'].hp -= effect['damage']
+            effect['attacker'].energy += effect['energy_delta']
+            for mod in effect['modifiers']:
+                stat = mod['stat']
+                max_stat_delta = 4
+                v = mod['target'].modifiers[stat] + mod['delta']
+                v = max(-max_stat_delta, min(max_stat_delta, v))
+                mod['target'].modifiers[stat] = v
 
         self.clock += self.delta
         return effects
@@ -206,8 +211,8 @@ class Trainer(Actor):
 
         self.active_mon = self.pokemon[0]
         self.active_mon.active = True
-        self.active_mon.buffs = 0
-        self.active_mon.debuffs = 0
+        self.active_mon.modifiers['attack'] = 0
+        self.active_mon.modifiers['defense'] = 0
         self.switch_clock = 0
         self.blocked = False
 
@@ -272,9 +277,9 @@ class Trainer(Actor):
         """
         if env.state == 'FAST_STATE':
             mon = self.active_mon
-            mon.fast_move
-            avail_charge_moves = [c for c in mon.charge_moves if (c['energy_delta'] + mon.energy) > 0]
-            move_cand = [mon.fast_move] + avail_charge_moves
+            mon.pvp_fast_move
+            avail_charge_moves = [c for c in mon.pvp_charge_moves if (c['energy_delta'] + mon.energy) > 0]
+            move_cand = [mon.pvp_fast_move] + avail_charge_moves
             # todo: swap?
             move = self.rng.choice(move_cand)
 
@@ -287,9 +292,9 @@ class Trainer(Actor):
         return action
 
 
-def compute_damage(mon1, mon2, move, charge=1.0):
+def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
     """
-    Compute damage dealt by a move
+    Compute damage and other effects caused by a move
 
     Args:
         mon1: (Pokemon): attacker
@@ -297,13 +302,20 @@ def compute_damage(mon1, mon2, move, charge=1.0):
         move: (dict): move dictionary
         charge: (float): between 0 and 1, if this move is a charge move,
             this is the percent of bubbles popped.
+        rng (RandomState):
 
     Example:
         >>> from pypogo.battle import *  # NOQA
         >>> mon1 = Pokemon.random('machamp', moves=['counter', 'cross chop', 'rock slide'], shadow=True).maximize(1500)
-        >>> mon2 = Pokemon.random('snorlax', shadow=True).maximize(1500)
-        >>> move = mon1.charge_moves[0]
-        >>> compute_damage(mon1, mon2, move)
+        >>> mon1 = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane'], shadow=True).maximize(1500)
+        >>> mon2 = Pokemon.random('snorlax', moves=['lick', 'super_power'], shadow=True).maximize(1500)
+        >>> mon2 = Pokemon.random('magikarp', shadow=True).maximize(1500)
+        >>> move = mon1.pvp_charge_moves[0]
+        >>> effect = compute_move_effect(mon1, mon2, move)
+        >>> print('effect = {}'.format(ub.repr2(effect, nl=2)))
+        >>> move = mon2.pvp_charge_moves[0]
+        >>> effect = compute_move_effect(mon2, mon1, move)
+        >>> print('effect = {}'.format(ub.repr2(effect, nl=2)))
     """
     import math
     move_type = move['type']
@@ -320,15 +332,65 @@ def compute_damage(mon1, mon2, move, charge=1.0):
 
     stab = 1.2 if (move_type in mon1.typing) else 1.0
 
-    num_buffs = 0
-    num_debuffs = 0
-
     bonus_multiplier = 1.3  # Hard coded in game, See [3].
 
     # Buff factors can be [1, 1.25, 1.5, 1.75, 2.0]
-    # Buff factors can be [1, 0.8, 0.66, 0.57, 0.5]
-    buf_factor = 1 + (num_buffs / 4)
-    debuf_factor = 1 / (1 + (num_debuffs / 4))
+    # DeBuff factors can be [1, 0.8, 0.66, 0.57, 0.5]
+    # This formula might make more sense, but its not what it is.
+    # 2 ** np.linspace(-1, 1, 9)
+    # np.logspace(-1, 1, 9, base=2)
+    # Is there a natural way to express?
+    # I don't think so, the right half is linear and the left half is
+    # non-linear.
+
+    if 0:
+        import kwplot
+        import numpy as np
+        plt = kwplot.autoplt()
+        from scipy.optimize import curve_fit
+        x = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+        y = np.array([0.5,  0.57, 0.66, 0.8, 1, 1.25, 1.5, 1.75, 2.0])
+        def func(x, c0, c1, c2, c3, c4):
+            return (
+                c4 * x ** 4 +
+                c3 * x ** 3 +
+                c2 * x ** 2 +
+                c1 * x ** 1 +
+                c0 * x ** 0 +
+                # b1 ** (x * e1)
+                0
+            )
+
+        left_y = 1 / (1 + (-x / 4))
+        right_y = 1 + (x / 4)
+
+        popt, pcov = curve_fit(func, x, y)
+
+        y_nat = 2. ** (np.array(x) / 4)
+
+        plt.clf()
+        plt.plot(x, y, 'b-o', label='real')
+        plt.plot(x, y_nat, 'r-o', label='natural')
+        plt.plot(x, y - y_nat, 'r-o', label='nat_delta')
+        plt.plot(x, left_y, '--', label='left-y')
+        plt.plot(x, right_y, '--', label='right-y')
+
+        x_hat = np.linspace(x[0], x[-1], 100)
+        y_hat = func(x_hat, *popt)
+
+        plt.plot(x_hat, y_hat, 'g--', label='fit')
+        plt.legend()
+
+
+
+    def modifier_factor(delta):
+        if delta > 0:
+            return 1 + (delta / 4)
+        else:
+            return 1 / (1 + (-delta / 4))
+
+    attack_modifier_factor = modifier_factor(mon1.modifiers['attack'])
+    defense_modifier_factor = modifier_factor(mon2.modifiers['defense'])
 
     attack_shadow_factor = 1.2 if mon1.shadow else 1.0
     defendse_shadow_factor = (1 / 1.2) if mon2.shadow else 1.0
@@ -338,14 +400,14 @@ def compute_damage(mon1, mon2, move, charge=1.0):
         charge *
         stab *
         adjusted_attack *
-        buf_factor *
+        attack_modifier_factor *
         attack_shadow_factor *
         effectiveness
     )
 
     defense_power = (
         adjusted_defense *
-        debuf_factor *
+        defense_modifier_factor *
         defendse_shadow_factor
     )
 
@@ -353,4 +415,52 @@ def compute_damage(mon1, mon2, move, charge=1.0):
 
     damage = math.floor(half * move_power * attack_power / defense_power) + 1
 
-    return damage
+    import random
+    if rng is None:
+        rng = random.Random()
+
+    # Determine if any buffs / debuffs occur
+    buffs = move.get('buffs', None)
+    modifiers = []
+    if buffs is not None:
+        chance = move['buffs']['activation_chance']
+        if chance == 1 or chance > rng.random():
+            attacker_att_delta = buffs.get('attacker_attack_stat_stage_change', 0)
+            attacker_def_delta = buffs.get('attacker_defense_stat_stage_change', 0)
+            target_att_delta = buffs.get('target_attack_stat_stage_change', 0)
+            target_def_delta = buffs.get('target_defense_stat_stage_change', 0)
+            if attacker_att_delta != 0:
+                modifiers.append({
+                    'target': mon1,
+                    'stat': 'attack',
+                    'delta': attacker_att_delta,
+                })
+            if attacker_def_delta != 0:
+                modifiers.append({
+                    'target': mon1,
+                    'stat': 'defense',
+                    'delta': attacker_def_delta,
+                })
+            if target_att_delta != 0:
+                modifiers.append({
+                    'target': mon2,
+                    'stat': 'attack',
+                    'delta': target_att_delta,
+                })
+            if target_def_delta != 0:
+                modifiers.append({
+                    'target': mon2,
+                    'stat': 'defense',
+                    'delta': target_def_delta,
+                })
+
+    effect = {
+        'desc': f'{mon1.name!r} used {move["name"]!r} against {mon2.name!r}',
+        'attacker': mon1,
+        'target': mon2,
+        'damage': damage,
+        'energy_delta': move['energy_delta'],
+        'turn_duration': move['turn_duration'],
+        'modifiers': modifiers,
+    }
+    return effect
