@@ -16,7 +16,59 @@ from pypogo.pogo_api import global_api
 
 class Pokemon(ub.NiceRepr):
     """
+    An object to represent a Pokemon and all of its attributes.
+
     xdoctest ~/code/pypogo/pypogo/pokemon.py
+
+    Example:
+        >>> import pypogo
+        >>> import ubelt as ub
+        >>> mon = pypogo.Pokemon.random('mew', moves=['wild charge'], rng=43903).maximize(max_cp=1500)
+        >>> print('mon = {!r}'.format(mon))
+        >>> _ = mon.league_ranking(verbose=1)
+        >>> print('mon.fast_move = {}'.format(ub.repr2(mon.fast_move['pvp'], nl=2)))
+        >>> print('mon.charge_moves = {}'.format(ub.repr2(mon.charge_moves['pvp'], nl=3)))
+        Leage 1500 Rankings
+        self = <Pokemon(mew, 1476, 16.5, [15, 4, 7], ['wild charge', 'Rock Smash', 'Stone Edge']) at 0x7efce32f76d0>
+           iva  ivd  ivs    rank  level      cp  stat_product_k      attack     defense  stamina    percent name
+        0   15    4    7  3815.0   16.5  1476.0      1772.24242  122.093046  116.124053    125.0  22.481043  mew
+        mon.fast_move = {
+            'energy_delta': 7,
+            'move_env': 'pvp',
+            'move_id': 241,
+            'move_type': 'fast',
+            'name': 'Rock Smash',
+            'power': 9,
+            'turn_duration': 3,
+            'type': 'Fighting',
+        }
+        mon.charge_moves = [
+            {
+                'buffs': {
+                    'activation_chance': 1.0,
+                    'attacker_defense_stat_stage_change': -2,
+                },
+                'energy_delta': -45,
+                'move_env': 'pvp',
+                'move_id': 251,
+                'move_type': 'charge',
+                'name': 'Wild Charge',
+                'power': 100,
+                'turn_duration': 1,
+                'type': 'Electric',
+            },
+            {
+                'energy_delta': -55,
+                'move_env': 'pvp',
+                'move_id': 32,
+                'move_type': 'charge',
+                'name': 'Stone Edge',
+                'power': 100,
+                'turn_duration': 1,
+                'type': 'Rock',
+            },
+        ]
+
 
     Example:
         >>> from pypogo.pokemon import *  # NOQA
@@ -856,6 +908,7 @@ class Pokemon(ub.NiceRepr):
             >>> from pypogo.pokemon import *  # NOQA
             >>> self = Pokemon.random()
             >>> print('self = {!r}'.format(self))
+            >>> mon.league_ranking()
             >>> print('self.pve_fast_move = {}'.format(ub.repr2(self.pve_fast_move, nl=1)))
             >>> print('self.pvp_charge_moves = {}'.format(ub.repr2(self.pvp_charge_moves, nl=2)))
 
@@ -880,6 +933,8 @@ class Pokemon(ub.NiceRepr):
         # rng = ub.ensure_rng(None)
         if rng is None:
             rng = random.Random()
+        elif isinstance(rng, int):
+            rng = random.Random(rng)
 
         if 0:
             api = global_api()
@@ -918,7 +973,7 @@ class Pokemon(ub.NiceRepr):
         assert 1 <= self.level <= max_level
 
         if ivs is None:
-            self.ivs = [rng.randint(0, 16), rng.randint(0, 16), rng.randint(0, 16)]
+            self.ivs = [rng.randint(0, 15), rng.randint(0, 15), rng.randint(0, 15)]
         else:
             ivs = self.ivs
 
@@ -928,6 +983,14 @@ class Pokemon(ub.NiceRepr):
             charged_names = rng.sample(cands['charged'], k=min(len(cands['charged']), 2))
             self.moves = [fast_name] + charged_names
         else:
+            moves = list(moves)
+            cands = self.candidate_moveset()
+            if len(set(moves) & set(cands['fast'])) == 0:
+                fast_name = rng.choice(cands['fast'])
+                moves = moves + [fast_name]
+            if len(set(moves) & set(cands['charged'])) == 0:
+                charge_name = rng.choice(cands['charged'])
+                moves = moves + [charge_name]
             self.moves = moves
 
         self.populate_all()
@@ -999,6 +1062,23 @@ class Pokemon(ub.NiceRepr):
         self.pve_charge_moves = pve_charge_cand[0:2]
         self.pvp_fast_move = pvp_fast_cand[0]
         self.pvp_charge_moves = pvp_charge_cand[0:2]
+
+    @property
+    def charge_moves(self):
+        """
+
+        """
+        return {
+            'pve': self.pve_charge_moves,
+            'pvp': self.pvp_charge_moves,
+        }
+
+    @property
+    def fast_move(self):
+        return {
+            'pve': self.pve_fast_move,
+            'pvp': self.pvp_fast_move,
+        }
 
     @classmethod
     def from_pvpoke_row(Pokemon, row):
