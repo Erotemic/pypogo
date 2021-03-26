@@ -157,18 +157,22 @@ class PogoAPI(ub.NiceRepr):
         api.pve_fast_moves = ub.group_items(
             api.data['fast_moves'],
             lambda item: normalize(item['name'].lower()))
+        api.pve_fast_moves.default_factory = None
 
         api.pve_charged_moves = ub.group_items(
             api.data['charged_moves'],
             lambda item: normalize(item['name'].lower()))
+        api.pve_charged_moves.default_factory = None
 
         api.pvp_fast_moves = ub.group_items(
             api.data['pvp_fast_moves'],
             lambda item: normalize(item['name'].lower()))
+        api.pvp_fast_moves.default_factory = None
 
         api.pvp_charged_moves = ub.group_items(
             api.data['pvp_charged_moves'],
             lambda item: normalize(item['name'].lower()))
+        api.pvp_charged_moves.default_factory = None
 
         if 0:
             ub.map_vals(len, api.pve_fast_moves)
@@ -190,10 +194,10 @@ class PogoAPI(ub.NiceRepr):
             }
         }
 
-    def normalize(self, x):
+    def normalize(api, x):
         return normalize(x)
 
-    def __nice__(self):
+    def __nice__(api):
         return str(list(api.routes.keys()))
 
     def normalize_name_and_form(api, name, form=None, hints=''):
@@ -423,13 +427,20 @@ class PogoAPI(ub.NiceRepr):
 # we should likey do some lazy initialization or something better
 
 
-api = None
+_api = None
 
 
-def global_api():
-    global api
-    if api is None:
-        api = PogoAPI()
-    return api
+def global_api(new=False):
+    global _api
+    if _api is None or new:
+        _api = PogoAPI()
+    return _api
 
-api = global_api()
+# api = global_api()
+
+
+def __getattr__(key):
+    if key == 'api':
+        return global_api()
+    else:
+        raise AttributeError

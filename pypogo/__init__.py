@@ -7,11 +7,8 @@ mkinit ~/code/pypogo/pypogo/__init__.py --lazy
 
 __submodules__ = {
     'pokemon': ['Pokemon'],
-    'pogo_api': ['global_api'],
+    'pogo_api': ['global_api', 'api'],
 }
-
-# from pypogo import Pokemon
-
 
 
 def lazy_import(module_name, submodules, submod_attrs):
@@ -56,6 +53,7 @@ __getattr__ = lazy_import(
     submod_attrs={
         'pogo_api': [
             'global_api',
+            'api',
         ],
         'pokemon': [
             'Pokemon',
@@ -67,4 +65,4 @@ __getattr__ = lazy_import(
 def __dir__():
     return __all__
 
-__all__ = ['Pokemon', 'global_api', 'pogo_api', 'pokemon']
+__all__ = ['Pokemon', 'api', 'global_api', 'pogo_api', 'pokemon']
