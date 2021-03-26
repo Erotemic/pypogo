@@ -127,6 +127,16 @@ class Pokemon(ub.NiceRepr):
             if level is None and self.ivs is not None:
                 self.populate_level()
 
+    def init_pvp_state(self):
+        self.hp = int(self.adjusted['stamina'])
+        self.energy = 0
+        self.reset_modifiers()
+        return self
+
+    def reset_modifiers(self):
+        self.modifiers['defense'] = 0
+        self.modifiers['attack'] = 0
+
     def __json__(self):
         return {
             'name': self.name,
@@ -975,7 +985,7 @@ class Pokemon(ub.NiceRepr):
         if ivs is None:
             self.ivs = [rng.randint(0, 15), rng.randint(0, 15), rng.randint(0, 15)]
         else:
-            ivs = self.ivs
+            self.ivs = ivs
 
         if moves is None:
             cands = self.candidate_moveset()
@@ -985,10 +995,13 @@ class Pokemon(ub.NiceRepr):
         else:
             moves = list(moves)
             cands = self.candidate_moveset()
-            if len(set(moves) & set(cands['fast'])) == 0:
+            cand_fast = set(map(self.api.normalize, cands['fast']))
+            cand_charged = set(map(self.api.normalize, cands['charged']))
+            move_have = set(map(self.api.normalize, moves))
+            if len(move_have & cand_fast) == 0:
                 fast_name = rng.choice(cands['fast'])
                 moves = moves + [fast_name]
-            if len(set(moves) & set(cands['charged'])) == 0:
+            if len(move_have & cand_charged) == 0:
                 charge_name = rng.choice(cands['charged'])
                 moves = moves + [charge_name]
             self.moves = moves

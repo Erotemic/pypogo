@@ -290,3 +290,51 @@ def cress_damage():
     print('damage = {!r}'.format(damage))
     dpe = damage / (-move['energy_delta'])
     print('dpe = {!r}'.format(dpe))
+
+    # Shadow Mewtwo vs Umbreon
+    # https://www.youtube.com/watch?v=BP50jy_2lco
+    from pypogo.battle import compute_move_effect
+    from pypogo.pokemon import Pokemon
+    umbr1 = Pokemon.random('umbreon').maximize(2500, ivs='maximize').init_pvp_state()
+    umbr2 = Pokemon.random('umbreon').maximize(2500, ivs=[0, 0, 0]).init_pvp_state()
+    print('umbr1.hp = {!r}'.format(umbr1.hp))
+    print('umbr2.hp = {!r}'.format(umbr2.hp))
+
+    attacker1 = Pokemon.random('mewtwo', moves=['psycho cut', 'psystrike', 'focus blast'], shadow=True).maximize(2500, ivs='maximize').init_pvp_state()
+    attacker2 = Pokemon.random('mewtwo', moves=['psycho cut', 'psystrike', 'focus blast'], shadow=True).maximize(2500, ivs=[15, 0, 0]).init_pvp_state()
+    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[1])
+    effect2 = compute_move_effect(attacker2, umbr2, attacker2.pvp_charge_moves[1])
+    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
+    print('effect2 = {}'.format(ub.repr2(effect2, nl=1)))
+
+    attacker1 = Pokemon.random('blaziken', moves=['focus blast']).maximize(2500, ivs='maximize').init_pvp_state()
+    attacker2 = Pokemon.random('blaziken', moves=['focus blast']).maximize(2500, ivs=[15, 0, 0]).init_pvp_state()
+    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[0])
+    effect2 = compute_move_effect(attacker2, umbr2, attacker2.pvp_charge_moves[0])
+    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
+    print('effect2 = {}'.format(ub.repr2(effect2, nl=1)))
+
+    attacker1 = Pokemon.random('togekiss', moves=['charm', 'ancient power', 'Dazzling gleam']).maximize(2500, ivs='maximize').init_pvp_state()
+    attacker2 = Pokemon.random('togekiss', moves=['charm', 'ancient power', 'Dazzling gleam']).maximize(2500, ivs=[15, 0, 0]).init_pvp_state()
+    attacker1.modifiers['attack'] = 2
+    attacker2.modifiers['attack'] = 2
+    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[1])
+    effect2 = compute_move_effect(attacker2, umbr2, attacker2.pvp_charge_moves[1])
+    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
+    print('effect2 = {}'.format(ub.repr2(effect2, nl=1)))
+
+    attacker1.modifiers['attack'] = 4
+    attacker2.modifiers['attack'] = 4
+    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[1])
+    effect2 = compute_move_effect(attacker2, umbr2, attacker2.pvp_charge_moves[1])
+    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
+    print('effect2 = {}'.format(ub.repr2(effect2, nl=1)))
+
+    attacker1 = Pokemon.random('lucario', moves=['Counter', 'Power Up Punch', 'Aura Sphere']).maximize(2500, ivs='maximize').init_pvp_state()
+    attacker2 = Pokemon.random('lucario', moves=['Counter', 'Power Up Punch', 'Aura Sphere']).maximize(2500, ivs=[15, 0, 0]).init_pvp_state()
+    attacker1.modifiers['attack'] = 3
+    attacker2.modifiers['attack'] = 3
+    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[1])
+    effect2 = compute_move_effect(attacker2, umbr2, attacker2.pvp_charge_moves[1])
+    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
+    print('effect2 = {}'.format(ub.repr2(effect2, nl=1)))

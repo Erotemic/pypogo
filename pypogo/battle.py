@@ -100,12 +100,13 @@ class BattleZone(Environment):
     def run(self, verbose=0):
         """
         Example:
-            self = BattleZone.random()
-            mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
-            mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
-            self.initialize()
-            self.time_limit = 10000
-            self.run(verbose=1)
+        >>> from pypogo.battle import *  # NOQA
+        >>> self = BattleZone.random()
+        >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
+        >>> mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
+        >>> self.initialize()
+        >>> self.time_limit = 10000
+        >>> self.run(verbose=1)
         """
         self.verbose = verbose
         events = self.initialize()
@@ -124,7 +125,10 @@ class BattleZone(Environment):
 
     def log_event(self, event):
         if self.verbose:
-            print('{}'.format(ub.repr2(event, nl=1)))
+            try:
+                print(event['desc'])
+            except Exception:
+                print('{}'.format(ub.repr2(event, nl=1)))
         self.timeline.append(event)
 
     def step(self):
@@ -348,55 +352,6 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
 
     stab = 1.2 if (move_type in mon1.typing) else 1.0
 
-    bonus_multiplier = 1.3  # Hard coded in game, See [3].
-
-    # Buff factors can be [1, 1.25, 1.5, 1.75, 2.0]
-    # DeBuff factors can be [1, 0.8, 0.66, 0.57, 0.5]
-    # This formula might make more sense, but its not what it is.
-    # 2 ** np.linspace(-1, 1, 9)
-    # np.logspace(-1, 1, 9, base=2)
-    # Is there a natural way to express?
-    # I don't think so, the right half is linear and the left half is
-    # non-linear.
-
-    if 0:
-        import kwplot
-        import numpy as np
-        plt = kwplot.autoplt()
-        from scipy.optimize import curve_fit
-        x = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
-        y = np.array([0.5,  0.57, 0.66, 0.8, 1, 1.25, 1.5, 1.75, 2.0])
-        def func(x, c0, c1, c2, c3, c4):
-            return (
-                c4 * x ** 4 +
-                c3 * x ** 3 +
-                c2 * x ** 2 +
-                c1 * x ** 1 +
-                c0 * x ** 0 +
-                # b1 ** (x * e1)
-                0
-            )
-
-        left_y = 1 / (1 + (-x / 4))
-        right_y = 1 + (x / 4)
-
-        popt, pcov = curve_fit(func, x, y)
-
-        y_nat = 2. ** (np.array(x) / 4)
-
-        plt.clf()
-        plt.plot(x, y, 'b-o', label='real')
-        plt.plot(x, y_nat, 'r-o', label='natural')
-        plt.plot(x, np.abs(y - y_nat), 'r-o', label='nat_abs_delta')
-        plt.plot(x, left_y, '--', label='left-y')
-        plt.plot(x, right_y, '--', label='right-y')
-
-        x_hat = np.linspace(x[0], x[-1], 100)
-        y_hat = func(x_hat, *popt)
-
-        plt.plot(x_hat, y_hat, 'g--', label='fit')
-        plt.legend()
-
     def modifier_factor(delta):
         if delta > 0:
             return 1 + (delta / 4)
@@ -407,10 +362,11 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
     defense_modifier_factor = modifier_factor(mon2.modifiers['defense'])
 
     attack_shadow_factor = 1.2 if mon1.shadow else 1.0
-    defendse_shadow_factor = (1 / 1.2) if mon2.shadow else 1.0
+    defense_shadow_factor = (1 / 1.2) if mon2.shadow else 1.0
 
+    pvp_bonus_multiplier = 1.3  # Hard coded in game, See [3].
     attack_power = (
-        bonus_multiplier *
+        pvp_bonus_multiplier *
         charge *
         stab *
         adjusted_attack *
@@ -422,7 +378,7 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
     defense_power = (
         adjusted_defense *
         defense_modifier_factor *
-        defendse_shadow_factor
+        defense_shadow_factor
     )
 
     half = 0.5  # not sure why a half is in the formula
@@ -467,8 +423,54 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
                     'delta': target_def_delta,
                 })
 
+    # Buff factors can be [1, 1.25, 1.5, 1.75, 2.0]
+    # DeBuff factors can be [1, 0.8, 0.66, 0.57, 0.5]
+    # This formula might make more sense, but its not what it is.
+    # 2 ** np.linspace(-1, 1, 9)
+    # np.logspace(-1, 1, 9, base=2)
+    # Is there a natural way to express?
+    # I don't think so, the right half is linear and the left half is
+    # non-linear.
+    if 0:
+        import kwplot
+        import numpy as np
+        plt = kwplot.autoplt()
+        from scipy.optimize import curve_fit
+        x = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
+        y = np.array([0.5,  0.57, 0.66, 0.8, 1, 1.25, 1.5, 1.75, 2.0])
+        def func(x, c0, c1, c2, c3, c4):
+            return (
+                c4 * x ** 4 +
+                c3 * x ** 3 +
+                c2 * x ** 2 +
+                c1 * x ** 1 +
+                c0 * x ** 0 +
+                # b1 ** (x * e1)
+                0
+            )
+
+        left_y = 1 / (1 + (-x / 4))
+        right_y = 1 + (x / 4)
+
+        popt, pcov = curve_fit(func, x, y)
+
+        y_nat = 2. ** (np.array(x) / 4)
+
+        plt.clf()
+        plt.plot(x, y, 'b-o', label='real')
+        plt.plot(x, y_nat, 'r-o', label='natural')
+        plt.plot(x, np.abs(y - y_nat), 'r-o', label='nat_abs_delta')
+        plt.plot(x, left_y, '--', label='left-y')
+        plt.plot(x, right_y, '--', label='right-y')
+
+        x_hat = np.linspace(x[0], x[-1], 100)
+        y_hat = func(x_hat, *popt)
+
+        plt.plot(x_hat, y_hat, 'g--', label='fit')
+        plt.legend()
+
     effect = {
-        'desc': f'{mon1.name!r} used {move["name"]!r} against {mon2.name!r}',
+        'desc': f'{mon1.name!r}  (hp={mon1.hp}, energy={mon1.energy}) is using {move["name"]!r} against {mon2.name!r} (hp={mon2.hp}, energy={mon2.energy})',
         'attacker': mon1,
         'target': mon2,
         'damage': damage,
