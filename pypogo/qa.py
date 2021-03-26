@@ -354,7 +354,7 @@ def cress_damage():
     name_to_ul_attack = {}
     for name in ub.ProgIter(all_mon_names - hp_users):
         try:
-            mon = pypogo.Pokemon.random(name).maximize(2500)
+            mon = pypogo.Pokemon.random(name).maximize(2500, ivs=[15, 0, 0])
             name_to_ul_attack[name] = mon.adjusted['attack']
         except Exception:
             bad.add(name)
@@ -367,13 +367,20 @@ def cress_damage():
     print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
 
     pypogo.Pokemon.random('archeops')
-    attacker1 = pypogo.Pokemon.random('deoxys', moves=['Zap Cannon']).maximize(2500)
+    attacker1 = pypogo.Pokemon.random('deoxys', moves=['Zap Cannon']).maximize(2500, ivs=[15, 0, 0])
     effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[0])
     print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
 
-    attacker1 = Pokemon.random('alakazam', moves=['psycho cut', 'Fire Punch', 'focus blast'], shadow=True).maximize(2500, ivs='maximize').init_pvp_state()
     attacker2 = Pokemon.random('alakazam', moves=['psycho cut', 'Fire Punch', 'focus blast'], shadow=True).maximize(2500, ivs=[15, 0, 0]).init_pvp_state()
-    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[1])
     effect2 = compute_move_effect(attacker2, umbr2, attacker2.pvp_charge_moves[1])
-    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
     print('effect2 = {}'.format(ub.repr2(effect2, nl=1)))
+
+    attacker1 = pypogo.Pokemon.random('absol', moves=['snarl', 'megahorn'], shadow=True).maximize(2500, ivs=[15, 0, 0]).init_pvp_state()
+    effect1 = compute_move_effect(attacker1, umbr1, attacker1.pvp_charge_moves[0])
+    print('effect1 = {}'.format(ub.repr2(effect1, nl=1)))
+
+    pypogo.Pokemon.random('rampardos')
+
+    # FIXME deoxys forms doesn't work
+    pypogo.Pokemon('deoxys', hints='attack')
+    pypogo.Pokemon('deoxys', hints='defense')
