@@ -26,10 +26,11 @@ class Pokemon(ub.NiceRepr):
         >>> mon = pypogo.Pokemon.random('mew', moves=['wild charge'], rng=43903).maximize(max_cp=1500)
         >>> print('mon = {!r}'.format(mon))
         >>> _ = mon.league_ranking(verbose=1)
+        >>> # xdoctest: +IGNORE_WANT
         >>> print('mon.fast_move = {}'.format(ub.repr2(mon.fast_move['pvp'], nl=2)))
         >>> print('mon.charge_moves = {}'.format(ub.repr2(mon.charge_moves['pvp'], nl=3)))
         Leage 1500 Rankings
-        self = <Pokemon(mew, 1476, 16.5, [15, 4, 7], ['wild charge', 'Rock Smash', 'Stone Edge']) at 0x7efce32f76d0>
+        self = <Pokemon(mew, 1476, 16.5, [15, 4, 7], ['wild charge', 'Rock Smash']) at ...
            iva  ivd  ivs    rank  level      cp  stat_product_k      attack     defense  stamina    percent name
         0   15    4    7  3815.0   16.5  1476.0      1772.24242  122.093046  116.124053    125.0  22.481043  mew
         mon.fast_move = {
@@ -56,16 +57,6 @@ class Pokemon(ub.NiceRepr):
                 'power': 100,
                 'turn_duration': 1,
                 'type': 'Electric',
-            },
-            {
-                'energy_delta': -55,
-                'move_env': 'pvp',
-                'move_id': 32,
-                'move_type': 'charge',
-                'name': 'Stone Edge',
-                'power': 100,
-                'turn_duration': 1,
-                'type': 'Rock',
             },
         ]
 
@@ -918,7 +909,7 @@ class Pokemon(ub.NiceRepr):
             >>> from pypogo.pokemon import *  # NOQA
             >>> self = Pokemon.random()
             >>> print('self = {!r}'.format(self))
-            >>> mon.league_ranking()
+            >>> self.league_ranking()
             >>> print('self.pve_fast_move = {}'.format(ub.repr2(self.pve_fast_move, nl=1)))
             >>> print('self.pvp_charge_moves = {}'.format(ub.repr2(self.pvp_charge_moves, nl=2)))
 

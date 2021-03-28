@@ -31,6 +31,7 @@ jobs:
   ###########
 
   .test-minimal-template: &test-minimal-template  
+    resource_class: small
     environment:
       # Setting the python executable environ allows template reuse for pypy
       - PYTHON_EXE: python
@@ -67,6 +68,7 @@ jobs:
 
 
   .test-full-template: &test-full-template  
+    resource_class: small
     environment:
       - PYTHON_EXE: python
     docker:
@@ -122,29 +124,29 @@ jobs:
       - image: circleci/python:3.7
     working_directory: ~/repo-full-37
 
-  test-full-3.6:
-    <<: *test-full-template
-    docker:
-      - image: circleci/python:3.5
-    working_directory: ~/repo-full-36
+  #test-full-3.6:
+  #  <<: *test-full-template
+  #  docker:
+  #    - image: circleci/python:3.5
+  #  working_directory: ~/repo-full-36
 
-  test-full-3.5:
-    <<: *test-full-template
-    docker:
-      - image: circleci/python:3.5
-    working_directory: ~/repo-full-35
+  #test-full-3.5:
+  #  <<: *test-full-template
+  #  docker:
+  #    - image: circleci/python:3.5
+  #  working_directory: ~/repo-full-35
 
-  test-full-3.4:
-    <<: *test-full-template
-    docker:
-      - image: circleci/python:3.4
-    working_directory: ~/repo-full-34
+  #test-full-3.4:
+  #  <<: *test-full-template
+  #  docker:
+  #    - image: circleci/python:3.4
+  #  working_directory: ~/repo-full-34
 
-  test-full-2.7:
-    <<: *test-full-template
-    docker:
-      - image: circleci/python:2.7
-    working_directory: ~/repo-full-27
+  #test-full-2.7:
+  #  <<: *test-full-template
+  #  docker:
+  #    - image: circleci/python:2.7
+  #  working_directory: ~/repo-full-27
 
   # ------------
   
@@ -160,29 +162,29 @@ jobs:
       - image: circleci/python:3.7
     working_directory: ~/repo-minimal-37
 
-  test-minimal-3.6:
-    <<: *test-minimal-template
-    docker:
-      - image: circleci/python:3.6
-    working_directory: ~/repo-minimal-36
+  #test-minimal-3.6:
+  #  <<: *test-minimal-template
+  #  docker:
+  #    - image: circleci/python:3.6
+  #  working_directory: ~/repo-minimal-36
 
-  test-minimal-3.5:
-    <<: *test-minimal-template
-    docker:
-      - image: circleci/python:3.5
-    working_directory: ~/repo-minimal-35
+  #test-minimal-3.5:
+  #  <<: *test-minimal-template
+  #  docker:
+  #    - image: circleci/python:3.5
+  #  working_directory: ~/repo-minimal-35
 
-  test-minimal-3.4:
-    <<: *test-minimal-template
-    docker:
-      - image: circleci/python:3.4
-    working_directory: ~/repo-minimal-34
+  #test-minimal-3.4:
+  #  <<: *test-minimal-template
+  #  docker:
+  #    - image: circleci/python:3.4
+  #  working_directory: ~/repo-minimal-34
 
-  test-minimal-2.7:
-    <<: *test-minimal-template
-    docker:
-      - image: circleci/python:2.7
-    working_directory: ~/repo-minimal-27
+  #test-minimal-2.7:
+  #  <<: *test-minimal-template
+  #  docker:
+  #    - image: circleci/python:2.7
+  #  working_directory: ~/repo-minimal-27
 
   # --- pypy ----
 
