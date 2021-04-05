@@ -384,3 +384,91 @@ def cress_damage():
     # FIXME deoxys forms doesn't work
     pypogo.Pokemon('deoxys', hints='attack')
     pypogo.Pokemon('deoxys', hints='defense')
+
+
+def breakpoints():
+    from pypogo.pokemon import Pokemon
+    import numpy as np
+    # import math
+    mon1 = Pokemon.random('melmetal', ivs=[15, 15, 15], level=40, moves=['Thunder Shock', 'Super_power'])
+    print('mon1.adjusted = {!r}'.format(mon1.adjusted))
+
+    mon2 = Pokemon.random('dialga', ivs=[15, 15, 15], level=40, moves=['Dragon Breath', 'Iron Head'])
+
+    from pypogo.battle import compute_move_effect
+    move = mon1.pvp_fast_move
+    move = mon1.pvp_charge_moves[0]
+
+    for move_name in ub.flatten(mon1.candidate_moveset().values()):
+        move = mon1.api.get_move_info(move_name)[1][0]
+        #
+        # Breakpoints for each move
+        mon1.adjusted['attack']
+        info = compute_move_effect(mon1, mon2, move)
+
+        # adjusted_attack = info['adjusted_attack']
+        attack_shadow_factor = info['attack_shadow_factor']
+        pvp_bonus_multiplier = info['pvp_bonus_multiplier']
+        effectiveness = info['effectiveness']
+        stab = info['stab']
+        attack_power = info['attack_power']
+
+        # adjusted_defense = info['adjusted_defense']
+
+        defense_power = info['defense_power']
+
+        move_power = move['power']
+        half = 0.5
+
+        damage_points = np.arange(info['damage'] // 2, int(info['damage'] * 2))
+
+        # damage_points = np.arange(1, 6)
+        break_points = (
+            ((damage_points - 1) * defense_power) /
+            (half * move_power * stab * effectiveness * attack_shadow_factor *
+             pvp_bonus_multiplier)
+        )
+
+        min_attack = mon1.adjusted['attack'] - 15
+        max_attack = mon1.adjusted['attack'] + 15
+
+        flags = break_points > min_attack
+        flags &= break_points < max_attack
+
+        damage_points_ = damage_points[flags]
+        break_points_ = break_points[flags]
+
+        print('move_name = {!r}'.format(move_name))
+        print('damage_points_ = {!r}'.format(damage_points_))
+        print('break_points_ = {!r}'.format(break_points_))
+
+    #
+    # Bulkpoints for each move
+    for move_name in ub.flatten(mon2.candidate_moveset().values()):
+        move = mon1.api.get_move_info(move_name)[1][0]
+
+        info = compute_move_effect(mon2, mon1, move)
+        attack_power = info['attack_power']
+        defense_modifier_factor = info['defense_modifier_factor']
+        defense_shadow_factor = info['defense_shadow_factor']
+        move_power = move['power']
+
+        damage_points = np.arange(info['damage'] // 2, int(info['damage'] * 2))
+        half = 0.5
+
+        bulk_points = (
+            (half * move_power * attack_power) /
+            ((damage_points - 1) * defense_modifier_factor * defense_shadow_factor)
+        )
+
+        min_defense = mon1.adjusted['defense'] - 15
+        max_defense = mon1.adjusted['defense'] + 15
+        flags = bulk_points > min_defense
+        flags &= bulk_points < max_defense
+
+        damage_points_ = damage_points[flags]
+        bulk_points_ = bulk_points[flags]
+
+        print('move_name = {!r}'.format(move_name))
+        print('damage_points_ = {!r}'.format(damage_points_))
+        print('bulk_points_ = {!r}'.format(bulk_points_))

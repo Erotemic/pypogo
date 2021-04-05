@@ -260,6 +260,69 @@ bellossom,BULLET_SEED,LEAF_BLADE,RETURN
 def read_ultra_rankings():
     import ubelt as ub
     fpath = '/home/joncrall/Downloads/premier Rankings (1).csv'
+
+    fpath = '/home/joncrall/Downloads/classic Rankings.csv'
+    # fpath = ub.expandpath('~/code/pypogo/pypogo/ultra_premier_rankings.csv')
+    import pandas as pd
+    data = pd.read_csv(fpath)
+    from pypogo.pokemon import Pokemon
+
+    max_cp = 2500
+    max_cp = np.inf
+
+    meta_mons = []
+
+    rows = list(data.iterrows())
+
+    for rx, row in ub.ProgIter(rows):
+        orig_name = row['Pokemon']
+        parts = orig_name.split(' (')
+        name = parts[0]
+        suffix = ' ('.join(parts[1:]).lower()
+        shadow = 'shadow' in suffix
+
+        moves = [row['Fast Move'], row['Charged Move 1'], row['Charged Move 2']]
+        level = row['Level']
+        mon = Pokemon(name, hints=orig_name, level=level, moves=moves, shadow=shadow)
+
+        if 'XL' in orig_name:
+            mon.maximize(2500, ivs=[10, 10, 10], max_level=50)
+        else:
+            mon.maximize(2500, ivs=[10, 10, 10], max_level=40)
+
+        meta_mons.append(mon)
+
+    blocklist = {
+        'zangoose',
+        'blastoise',
+        'suicune',
+        # zapdos,
+        # lugia,
+        'steelix',
+        'lickilicky',
+        'milotic',
+        'deoxys',
+        'mewtwo',  # TODO armored
+    }
+
+    seen = set()
+
+    i = 0
+    mon_iter = iter(meta_mons)
+    # while i < 30:
+    while i < 100:
+        mon = next(mon_iter)
+        if mon.name not in seen:
+            seen.add(mon.name)
+            if mon.name not in blocklist:
+                line = mon.to_pvpoke_import_line()
+                print(line)
+                i += 1
+
+
+def read_ultra_rankings():
+    import ubelt as ub
+    fpath = '/home/joncrall/Downloads/premier Rankings (1).csv'
     # fpath = ub.expandpath('~/code/pypogo/pypogo/ultra_premier_rankings.csv')
     import pandas as pd
     data = pd.read_csv(fpath)
@@ -313,3 +376,27 @@ def read_ultra_rankings():
                 line = mon.to_pvpoke_import_line()
                 print(line)
                 i += 1
+
+
+master_meta = """
+groudon,MUD_SHOT,EARTHQUAKE,FIRE_PUNCH
+melmetal,THUNDER_SHOCK,SUPERPOWER,ROCK_SLIDE
+snorlax-shadow,LICK,BODY_SLAM,SUPERPOWER
+giratina_origin,SHADOW_CLAW,SHADOW_BALL,OMINOUS_WIND
+dialga,DRAGON_BREATH,IRON_HEAD,DRACO_METEOR
+dragonite-shadow,DRAGON_BREATH,DRAGON_CLAW,HURRICANE
+ho_oh,INCINERATE,BRAVE_BIRD,EARTHQUAKE
+palkia,DRAGON_BREATH,AQUA_TAIL,DRACO_METEOR
+zekrom,DRAGON_BREATH,CRUNCH,WILD_CHARGE
+lugia,DRAGON_TAIL,SKY_ATTACK,AEROBLAST
+gyarados-shadow,DRAGON_BREATH,AQUA_TAIL,CRUNCH
+swampert,MUD_SHOT,HYDRO_CANNON,EARTHQUAKE
+garchomp,MUD_SHOT,OUTRAGE,EARTHQUAKE
+togekiss,CHARM,ANCIENT_POWER,FLAMETHROWER
+kyogre,WATERFALL,SURF,BLIZZARD
+mamoswine-shadow,POWDER_SNOW,AVALANCHE,BULLDOZE
+landorus_incarnate,MUD_SHOT,ROCK_SLIDE,EARTH_POWER
+reshiram,DRAGON_BREATH,CRUNCH,OVERHEAT
+zapdos,THUNDER_SHOCK,DRILL_PECK,THUNDERBOLT
+metagross,BULLET_PUNCH,METEOR_MASH,EARTHQUAKE
+"""

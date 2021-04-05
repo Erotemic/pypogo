@@ -321,6 +321,29 @@ class PogoAPI(ub.NiceRepr):
 
         return name, form
 
+    def get_move_info(api, move_name):
+        pvp_cand = []
+        pve_cand = []
+        move = api.normalize(move_name)
+        if move in api.pve_fast_moves:
+            fast = api.pve_fast_moves[move]
+            pve_cand.extend(fast)
+        elif move in api.pve_charged_moves:
+            charged = api.pve_charged_moves[move]
+            pve_cand.extend(charged)
+        else:
+            raise KeyError('unknown move {}'.format(move))
+        if move in api.pvp_fast_moves:
+            fast = api.pvp_fast_moves[move]
+            pvp_cand.extend(fast)
+        elif move in api.pvp_charged_moves:
+            charged = api.pvp_charged_moves[move]
+            pvp_cand.extend(charged)
+        else:
+            raise KeyError('unknown move {}'.format(move))
+
+        return pve_cand, pvp_cand
+
     def get_info(api, name, form=None):
         """
         Example:
