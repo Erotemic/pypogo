@@ -472,3 +472,143 @@ def breakpoints():
         print('move_name = {!r}'.format(move_name))
         print('damage_points_ = {!r}'.format(damage_points_))
         print('bulk_points_ = {!r}'.format(bulk_points_))
+
+
+def move_chart():
+    import pypogo
+    api = pypogo.api
+
+    import kwplot
+    kwplot.autompl()
+    import seaborn as sns
+    sns.set()
+
+    longform = []
+    # for move in api.pvp_fast_moves.values():
+
+    for move in api.pvp_charged_moves.values():
+        assert len(move) == 1
+        move = move[0]
+        if move.get('buffs', None):
+            move['hasbuff'] = True
+            move.get('buffs')['activation_chance']
+
+        longform.append(move)
+
+    import pandas as pd
+    df = pd.DataFrame(longform)
+
+    # sns.scatterplot(data=df, x='energy_delta', y='power', color='type', label='name')
+    sns.scatterplot(data=df,
+                    x='energy_delta',
+                    y='power',
+                    label='name')
+
+    df['dps'] = df['power'] / df['turn_duration']
+    df['eps'] = df['energy_delta'] / df['turn_duration']
+    df['dpe'] = df['dps'] / df['energy_delta']
+    dpe = df['dpe'].copy()
+    dpe[df.energy_delta == 0] = 0
+    df['dpe'] = dpe
+    df['prod'] = df['dps'] * df['eps']
+    df = df.sort_values('prod')
+
+    """
+
+    import sympy as sym
+    d, e, s = sym.symbols('d, e, s')
+
+    dps = d / s
+    eps = e / s
+    dpe = d / e
+
+    prod = dps * dpe * eps
+
+    prod = dps * eps
+    print('prod = {!r}'.format(prod))
+    """
+
+    # TODO: Seaborn table
+
+    from matplotlib.table import Table
+    # import numpy as np
+    plt = kwplot.autoplt()
+    xlabel = 'dps'
+    ylabel = 'eps'
+
+    # https://stackoverflow.com/questions/10194482/custom-matplotlib-plot-chess-board-like-table-with-colored-cells
+
+    x_basis = df[xlabel].unique()
+    y_basis = df[ylabel].unique()
+
+    fig = kwplot.figure(fnum=1, doclf=True)
+    ax = fig.gca()
+    ax.set_axis_off()
+    ax.set_axis_off()
+
+    ax = plt.gca()
+    tb = Table(ax, bbox=[0, 0, 1, 1])
+
+    nrows = len(x_basis)
+    ncols = len(y_basis)
+    x_basis.max() / np.diff(sorted(x_basis)).min()
+    y_basis.max() / np.diff(sorted(y_basis)).min()
+    width = 1 / nrows
+    height = 1 / ncols
+    print('nrows = {!r}'.format(nrows))
+    print('ncols = {!r}'.format(ncols))
+    print('height = {!r}'.format(height))
+    print('width = {!r}'.format(width))
+    # , height = 1.0 / ncols, 1.0 / nrows
+
+    print(df.to_string())
+
+    table_cells = []
+    for rval, row_group in df.groupby('eps'):
+        for cval, cell_group in row_group.groupby('dps'):
+            if len(cell_group) > 1:
+                eps = cell_group['eps'].iloc[0]
+                dps = cell_group['dps'].iloc[0]
+                text = '\n'.join(cell_group['name'])
+                # text += ('\neps = {:.2f}'.format(eps))
+                # text += ('\ndps = {:.2f}'.format(dps))
+                table_cells.append({
+                    'eps': eps,
+                    'dps': dps,
+                    'score': (dps * eps) ** 0.5,
+                    'text': text,
+                })
+
+    for i, label in enumerate(x_basis):
+        tb.add_cell(i, -1, width, height, text='{:.2f}'.format(label),
+                    loc='right', edgecolor='none', facecolor='none')
+    # Column Labels...
+    for j, label in enumerate(y_basis):
+        tb.add_cell(-1, j, width, height / 2, text='{:.2f}'.format(label),
+                    loc='center', edgecolor='none', facecolor='none')
+
+    for rval in y_basis:
+        for cval in x_basis:
+            color = 'orange'
+            tb.add_cell(rval, cval, width, height, loc='center',
+                        facecolor=color)
+
+    for cell in table_cells:
+        color = 'pink'
+        rval = cell['eps']
+        cval = cell['dps']
+        tb.add_cell(
+            rval, cval, width, height, text=text, loc='center',
+            facecolor=color, fontproperties={
+                # 'size': 22
+                'size': 'xx-large',
+            })
+
+    ax.add_table(tb)
+    # ax.set_xlim(-1, 1)
+    # ax.set_ylim(-1, 1)
+
+    # dfcell = pd.DataFrame(table_cells)
+    # pv = dfcell.pivot("eps", "dps", "score")
+
+    # sns.heatmap(data=pv, annot=True, fmt="f", linewidths=.5, ax=ax)

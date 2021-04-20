@@ -84,8 +84,8 @@ class PogoAPI(ub.NiceRepr):
             'pokemon_names': api.base + 'pokemon_names.json',
             'api_hashes': api.base + 'api_hashes.json',
 
-            'pvp_fast_moves': api.base.replace('v1/', 'dev/pvp_fast_moves.json'),
-            'pvp_charged_moves': api.base.replace('v1/', 'dev/pvp_charged_moves.json'),
+            'pvp_fast_moves':  api.base + 'pvp_fast_moves.json',
+            'pvp_charged_moves': api.base + 'pvp_charged_moves.json',
         }
         api.data = {}
         for key, url in api.routes.items():
