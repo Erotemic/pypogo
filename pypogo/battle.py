@@ -24,6 +24,7 @@ Basic components of Reinforcement Learning:
 
 """
 from pypogo.pokemon import Pokemon
+from pypogo.utils import PriorityQueue, PriorityData
 import ubelt as ub
 import random
 
@@ -46,6 +47,43 @@ class Actor(ub.NiceRepr):
     """
 
 
+class ActionQueue:
+    """
+    Holds actions with a turn duration until they are finished
+
+    Ignore:
+        q = ActionQueue()
+        q.add({'countdown': 3, 'meta': 3})
+        q.add({'countdown': 5, 'meta': 5})
+        for i in range(5):
+            q.step()
+            print(q.pop_ready())
+    """
+    def __init__(self):
+        import itertools as it
+        self._items = PriorityQueue()
+        self._nextid = it.count(0)
+
+    def add(self, action):
+        assert 'countdown' in action
+        self._items[next(self._nextid)] = PriorityData(action['countdown'], action)
+
+    def pop_ready(self):
+        """
+        Return all actions where the turn duration is at zero.
+        """
+        _, val = self._items.peek()
+        if val.priority <= 0:
+            return [v.data for _, v in self._items.pop_level()]
+        else:
+            return []
+
+    def step(self):
+        # Hack, but it works
+        for item in self._items.values():
+            item.priority -= 1
+
+
 class BattleZone(Environment):
     """
     Example:
@@ -64,7 +102,8 @@ class BattleZone(Environment):
             'CHARGE_STATE',
             'END_STATE',
         ]
-        self.action_queue = []
+        self.action_queue = ActionQueue()
+        self.effect_queue = []
         self.timeline = []
         self.clock = 0
         self.tic_delta = 500
@@ -133,15 +172,17 @@ class BattleZone(Environment):
 
     def step(self):
         """
-        from pypogo.battle import *  # NOQA
+        Ignore:
+            from pypogo.battle import *  # NOQA
 
-        self = BattleZone.random()
-        mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
-        mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
-        self.initialize()
-        self.step()
-        print(self.players[0].pokemon[0].hp)
-        print(self.players[1].pokemon[0].hp)
+            self = BattleZone.random()
+            mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
+            mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
+            self.initialize()
+            print(self.step())
+            print(self.step())
+            print(self.players[0].pokemon[0].hp)
+            print(self.players[1].pokemon[0].hp)
         """
 
         if self.clock >= self.time_limit:
@@ -155,41 +196,74 @@ class BattleZone(Environment):
         # induce a cooldown time that blocks the actor.
 
         player1, player2  = self.players
-
-        mon1 = player1.pokemon[0]
-        mon2 = player2.pokemon[0]
+        # mon1 = player1.pokemon[0]
+        # mon2 = player2.pokemon[0]
 
         env = self
         action1 = player1.choose_action(env)
         action2 = player2.choose_action(env)
 
+        # Enquing an action for a fast move starts the attack animation
+        self.action_queue.add(action1)
+        self.action_queue.add(action2)
+
+        # self.action_queue.step()
+        # self.action_queue.step()
+        # self.action_queue.step()
+
+        ready_actions = self.action_queue.pop_ready()
+
+        if ready_actions:
+            action_types = {action['type'] for action in ready_actions}
+
+            if 'charge' in action_types:
+                pass
+
+            for action in ready_actions:
+                attacker = action['user']
+                defender = action['opponent'].pokemon[0]
+                move = action['move']
+                effect = compute_move_effect(attacker, defender, move)
+                effect_priority = 3
+                if move['type'] == 'fast':
+                    effect_priority = 2
+                elif move['type'] == 'charged':
+                    effect_priority = 1
+                self.effect_queue.append((effect_priority, effect))
+
         move1 = action1['move']
         move2 = action2['move']
-
         if move1['move_type'] == 'fast' and move2['move_type'] == 'fast':
             pass
 
-        # Need to figure out the right quing system
+        resolved = []
+        if self.effect_queue:
+            effect_groups = ub.group_items(self.effect_queue, key=lambda x: x[0])
+            for _, effects in effect_groups.items():
+                # Check for effects fizzled in previou priority step
+                for _, effect in effects:
+                    if effect['attacker'].hp <= 0:
+                        effect['fizzled'] = True
 
+                for _, effect in effects:
+                    if not effect.get('fizzled', False):
+                        effect['target'].hp -= effect['damage']
+                        effect['attacker'].energy += effect['energy_delta']
+                        for mod in effect['modifiers']:
+                            stat = mod['stat']
+                            max_stat_delta = 4
+                            v = mod['target'].modifiers[stat] + mod['delta']
+                            v = max(-max_stat_delta, min(max_stat_delta, v))
+                            mod['target'].modifiers[stat] = v
+                        resolved.append(effect)
+
+        # Need to figure out the right quing system
         # action = 'fast_move'
         # if action == 'fast_move':
 
-        effects = []
-        effects.append(compute_move_effect(mon1, mon2, move1))
-        effects.append(compute_move_effect(mon2, mon1, move2))
-
-        for effect in effects:
-            effect['target'].hp -= effect['damage']
-            effect['attacker'].energy += effect['energy_delta']
-            for mod in effect['modifiers']:
-                stat = mod['stat']
-                max_stat_delta = 4
-                v = mod['target'].modifiers[stat] + mod['delta']
-                v = max(-max_stat_delta, min(max_stat_delta, v))
-                mod['target'].modifiers[stat] = v
-
+        self.action_queue.step()
         self.clock += self.tic_delta
-        return effects
+        return resolved
 
 
 class Trainer(Actor):
@@ -296,6 +370,11 @@ class Trainer(Actor):
 
         """
         if env.state == 'FAST_STATE':
+            opponent = None
+            for other in  env.players:
+                if other is not self:
+                    opponent = other
+
             mon = self.active_mon
             mon.pvp_fast_move
             avail_charge_moves = [c for c in mon.pvp_charge_moves if (c['energy_delta'] + mon.energy) > 0]
@@ -304,7 +383,12 @@ class Trainer(Actor):
             move = self.rng.choice(move_cand)
 
             action = {
+                'player': self,
+                'opponent': opponent,
                 'move': move,
+                'type': move['move_type'],
+                'user': self.pokemon[0],
+                'countdown': move['turn_duration'],
             }
         else:
             action = {}
