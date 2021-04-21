@@ -149,8 +149,8 @@ class BattleZone(Environment):
         self.effect_queue = PriorityList()
         self.timeline = []
         self.clock = 0
-        self.tic_delta = 500
-        self.time_limit = 240000
+        self.tic_delta = 500 / 500
+        self.time_limit = 240000 / 500
         self.verbose = 1
         self.blocked = set()
 
@@ -191,7 +191,8 @@ class BattleZone(Environment):
             >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
             >>> mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
             >>> self.initialize()
-            >>> self.time_limit = 20000
+            >>> self.verbose = 1
+            >>> self.time_limit = 20000 / 500
             >>> self.run(verbose=1)
             >>> print('self.timeline = {}'.format(ub.repr2(self.timeline, nl=1)))
         """
@@ -206,15 +207,15 @@ class BattleZone(Environment):
             # for event in events:
             #     self.log_event(event)
             if self.clock >= self.time_limit:
-                self.log_event({'desc': 'times up', 'clock': self.clock, 'time_limit': self.time_limit})
+                self.log_event({'desc': 'times up', 'clock': self.clock})
                 ongoing = False
 
     def log_event(self, event):
         if self.verbose:
-            try:
-                print(event['desc'])
-            except Exception:
-                print('{}'.format(ub.repr2(event, nl=1)))
+            # try:
+            #     print(event['desc'])
+            # except Exception:
+            print('{}'.format(ub.repr2(event, nl=0)))
         self.timeline.append(event)
 
     def step(self):
@@ -264,13 +265,13 @@ class BattleZone(Environment):
         action2 = None
         if player1 not in self.blocked:
             action1 = player1.choose_action(env)
-            self.log_event({'desc': 'enqueue action1', 'clock': self.clock, 'time_limit': self.time_limit})
+            self.log_event({'desc': 'enqueue action1', 'clock': self.clock})
             self.action_queue.add(action1, priority=action1['countdown'])
             self.blocked.add(player1)
 
         if player2 not in self.blocked:
             action2 = player2.choose_action(env)
-            self.log_event({'desc': 'enqueue action2', 'clock': self.clock, 'time_limit': self.time_limit})
+            self.log_event({'desc': 'enqueue action2', 'clock': self.clock})
             self.action_queue.add(action2, priority=action2['countdown'])
             self.blocked.add(player2)
 
@@ -331,7 +332,7 @@ class BattleZone(Environment):
                         v = max(-max_stat_delta, min(max_stat_delta, v))
                         mod['target'].modifiers[stat] = v
                     resolved.append(effect)
-                    self.log_event({'desc': 'resolved effect: {}'.format(effect['desc']), 'clock': self.clock, 'time_limit': self.time_limit})
+                    self.log_event({'desc': 'resolved effect: {}'.format(effect['desc']), 'clock': self.clock})
                     self.log_event({'desc': 'new hp: {}'.format(effect['target'].hp)})
                     if effect['target'].hp <= 0:
                         self.log_event({'desc': 'FEINT!'})
