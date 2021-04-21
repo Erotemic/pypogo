@@ -191,9 +191,9 @@ class BattleZone(Environment):
             >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
             >>> mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
             >>> self.initialize()
-            >>> self.time_limit = 1000000
+            >>> self.time_limit = 20000
             >>> self.run(verbose=1)
-            >>> print('self.timeline = {}'.format(ub.repr2(self.timeline, nl=2)))
+            >>> print('self.timeline = {}'.format(ub.repr2(self.timeline, nl=1)))
         """
         self.verbose = verbose
         events = self.initialize()
@@ -315,7 +315,7 @@ class BattleZone(Environment):
             for effect in effects:
                 if effect['player'] in self.blocked:
                     self.blocked.remove(effect['player'])
-                    self.log_event({'desc': 'remove block', 'clock': self.clock, 'time_limit': self.time_limit})
+                    # self.log_event({'desc': 'remove block', 'clock': self.clock, 'time_limit': self.time_limit})
 
                 if effect['attacker'].hp <= 0:
                     effect['fizzled'] = True
@@ -331,7 +331,13 @@ class BattleZone(Environment):
                         v = max(-max_stat_delta, min(max_stat_delta, v))
                         mod['target'].modifiers[stat] = v
                     resolved.append(effect)
-                    self.log_event({'desc': 'resolved effect', 'clock': self.clock, 'time_limit': self.time_limit})
+                    self.log_event({'desc': 'resolved effect: {}'.format(effect['desc']), 'clock': self.clock, 'time_limit': self.time_limit})
+                    self.log_event({'desc': 'new hp: {}'.format(effect['target'].hp)})
+                    if effect['target'].hp <= 0:
+                        self.log_event({'desc': 'FEINT!'})
+                        # TODO: add feint to the priority queue and handle it
+
+                        raise NotImplementedError
                     # self.log_event(effect)
 
         # Need to figure out the right quing system
