@@ -12,7 +12,6 @@ References:
     .. [4] https://en.wikipedia.org/wiki/Deep_reinforcement_learning
 
 
-
 Basic components of Reinforcement Learning:
     * An environment: E, with a state and space-time grid
     * A set set of actors: {A_i}, each with a state
@@ -27,6 +26,7 @@ from pypogo.pokemon import Pokemon
 from pypogo.utils import PriorityQueue, PriorityData
 import ubelt as ub
 import random
+import sortedcontainers
 
 
 class Environment(ub.NiceRepr):
@@ -47,41 +47,84 @@ class Actor(ub.NiceRepr):
     """
 
 
-class ActionQueue:
+class PriorityList(ub.NiceRepr):
     """
     Holds actions with a turn duration until they are finished
 
-    Ignore:
-        q = ActionQueue()
-        q.add({'countdown': 3, 'meta': 3})
-        q.add({'countdown': 5, 'meta': 5})
-        for i in range(5):
-            q.step()
-            print(q.pop_ready())
+    CommandLine:
+        xdoctest -m pypogo.battle PriorityList
+
+    Example:
+        >>> from pypogo.battle import *  # NOQA
+        >>> q = self = PriorityList()
+        >>> q.add({'meta': 3}, priority=3)
+        >>> q.add({'meta': 5}, priority=5)
+        >>> print('q = {!r}'.format(q))
+        >>> for i in range(8):
+        >>>     print('-----')
+        >>>     print('q = {!r}'.format(q))
+        >>>     ready = q.pop_ready()
+        >>>     print('pop ready = {!r}'.format(ready))
+        >>>     print('q = {!r}'.format(q))
+        >>>     q.step()
     """
     def __init__(self):
         import itertools as it
-        self._items = PriorityQueue()
+        self._items = sortedcontainers.SortedListWithKey(key=lambda x: x[0])
+        # self._items = PriorityQueue()
         self._nextid = it.count(0)
 
-    def add(self, action):
-        assert 'countdown' in action
-        self._items[next(self._nextid)] = PriorityData(action['countdown'], action)
+    def __nice__(self):
+        return ub.repr2(list(self._items), nl=1)
+
+    def add(self, action, priority=0):
+        self._items.add([priority, action])
+
+    def peek(self):
+        priority0, item0 = self._items[0]
+        return item0
 
     def pop_ready(self):
         """
         Return all actions where the turn duration is at zero.
         """
-        _, val = self._items.peek()
-        if val.priority <= 0:
-            return [v.data for _, v in self._items.pop_level()]
-        else:
+        if not len(self._items):
+            return None
+        priority0, item0 = self._items[0]
+        if priority0 <= 0:
+            return self.pop_next()
+
+    def pop_next(self):
+        """
+        Return all actions where the turn duration is at zero.
+        """
+        if not len(self._items):
+            return None
+
+        priority0, item0 = self._items[0]
+        idx = -1
+        top_level = []
+        for idx, (priority, item) in enumerate(self._items):
+            if priority0 != priority:
+                top_level.append(item)
+                break
+        idx += 1
+        if idx == 0:
             return []
+
+        # pop
+        cls = self._items.__class__
+        key = self._items.key
+        removed = self._items[0:idx]
+        remain = cls(self._items[idx:], key=key)
+        top_level = [item for _, item in removed]
+        self._items = remain
+        return top_level
 
     def step(self):
         # Hack, but it works
-        for item in self._items.values():
-            item.priority -= 1
+        for item in self._items:
+            item[0] -= 1
 
 
 class BattleZone(Environment):
@@ -102,13 +145,14 @@ class BattleZone(Environment):
             'CHARGE_STATE',
             'END_STATE',
         ]
-        self.action_queue = ActionQueue()
-        self.effect_queue = []
+        self.action_queue = PriorityList()
+        self.effect_queue = PriorityList()
         self.timeline = []
         self.clock = 0
-        self.tic_delta = 500
-        self.time_limit = 240000
+        self.tic_delta = 500 / 500
+        self.time_limit = 240000 / 500
         self.verbose = 1
+        self.blocked = set()
 
     def __nice__(self):
         return ub.repr2({
@@ -138,14 +182,19 @@ class BattleZone(Environment):
 
     def run(self, verbose=0):
         """
+        CommandLine:
+            xdoctest -m pypogo.battle BattleZone.run
+
         Example:
-        >>> from pypogo.battle import *  # NOQA
-        >>> self = BattleZone.random()
-        >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
-        >>> mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
-        >>> self.initialize()
-        >>> self.time_limit = 10000
-        >>> self.run(verbose=1)
+            >>> from pypogo.battle import *  # NOQA
+            >>> self = BattleZone.random()
+            >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
+            >>> mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
+            >>> self.initialize()
+            >>> self.verbose = 1
+            >>> self.time_limit = 20000 / 500
+            >>> self.run(verbose=1)
+            >>> print('self.timeline = {}'.format(ub.repr2(self.timeline, nl=1)))
         """
         self.verbose = verbose
         events = self.initialize()
@@ -155,34 +204,46 @@ class BattleZone(Environment):
         ongoing = True
         while ongoing:
             events = self.step()
-            for event in events:
-                self.log_event(event)
-
+            # for event in events:
+            #     self.log_event(event)
             if self.clock >= self.time_limit:
-                self.log_event({'desc': 'times up'})
+                self.log_event({'desc': 'times up', 'clock': self.clock})
                 ongoing = False
 
     def log_event(self, event):
         if self.verbose:
-            try:
-                print(event['desc'])
-            except Exception:
-                print('{}'.format(ub.repr2(event, nl=1)))
+            # try:
+            #     print(event['desc'])
+            # except Exception:
+            print('{}'.format(ub.repr2(event, nl=0)))
         self.timeline.append(event)
 
     def step(self):
         """
-        Ignore:
-            from pypogo.battle import *  # NOQA
+        CommandLine:
+            xdoctest -m pypogo.battle BattleZone.step
 
-            self = BattleZone.random()
-            mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
-            mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
-            self.initialize()
-            print(self.step())
-            print(self.step())
-            print(self.players[0].pokemon[0].hp)
-            print(self.players[1].pokemon[0].hp)
+        Example:
+            >>> from pypogo.battle import *  # NOQA
+            >>> self = BattleZone.random()
+            >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)
+            >>> mon2 = self.players[1].pokemon[0] = Pokemon.random('snorlax', moves=['lick', 'super_power']).maximize(2500)
+            >>> self.initialize()
+            >>> print('self.action_queue = {!r}'.format(self.action_queue))
+            >>> print('---step---')
+            >>> print(self.step())
+            >>> print('self.action_queue = {!r}'.format(self.action_queue))
+            >>> print('---step---')
+            >>> print(self.step())
+            >>> print('self.action_queue = {!r}'.format(self.action_queue))
+            >>> print('---step---')
+            >>> print(self.step())
+            >>> print('---step---')
+            >>> print(self.step())
+            >>> print('---step---')
+            >>> print(self.step())
+            >>> print(self.players[0].pokemon[0].hp)
+            >>> print(self.players[1].pokemon[0].hp)
         """
 
         if self.clock >= self.time_limit:
@@ -200,12 +261,21 @@ class BattleZone(Environment):
         # mon2 = player2.pokemon[0]
 
         env = self
-        action1 = player1.choose_action(env)
-        action2 = player2.choose_action(env)
+        action1 = None
+        action2 = None
+        if player1 not in self.blocked:
+            action1 = player1.choose_action(env)
+            self.log_event({'desc': 'enqueue action1', 'clock': self.clock})
+            self.action_queue.add(action1, priority=action1['countdown'])
+            self.blocked.add(player1)
+
+        if player2 not in self.blocked:
+            action2 = player2.choose_action(env)
+            self.log_event({'desc': 'enqueue action2', 'clock': self.clock})
+            self.action_queue.add(action2, priority=action2['countdown'])
+            self.blocked.add(player2)
 
         # Enquing an action for a fast move starts the attack animation
-        self.action_queue.add(action1)
-        self.action_queue.add(action2)
 
         # self.action_queue.step()
         # self.action_queue.step()
@@ -224,38 +294,52 @@ class BattleZone(Environment):
                 defender = action['opponent'].pokemon[0]
                 move = action['move']
                 effect = compute_move_effect(attacker, defender, move)
+                effect['player'] = action['player']
                 effect_priority = 3
                 if move['type'] == 'fast':
                     effect_priority = 2
                 elif move['type'] == 'charged':
                     effect_priority = 1
-                self.effect_queue.append((effect_priority, effect))
+                self.effect_queue.add(effect, priority=effect_priority)
 
-        move1 = action1['move']
-        move2 = action2['move']
-        if move1['move_type'] == 'fast' and move2['move_type'] == 'fast':
-            pass
+        # move1 = action1['move']
+        # move2 = action2['move']
+        # if move1['move_type'] == 'fast' and move2['move_type'] == 'fast':
+        #     pass
 
         resolved = []
-        if self.effect_queue:
-            effect_groups = ub.group_items(self.effect_queue, key=lambda x: x[0])
-            for _, effects in effect_groups.items():
-                # Check for effects fizzled in previou priority step
-                for _, effect in effects:
-                    if effect['attacker'].hp <= 0:
-                        effect['fizzled'] = True
+        while self.effect_queue:
+            effects = self.effect_queue.pop_next()
+            if effects is None:
+                break
+            # Check for effects fizzled in previou priority step
+            for effect in effects:
+                if effect['player'] in self.blocked:
+                    self.blocked.remove(effect['player'])
+                    # self.log_event({'desc': 'remove block', 'clock': self.clock, 'time_limit': self.time_limit})
 
-                for _, effect in effects:
-                    if not effect.get('fizzled', False):
-                        effect['target'].hp -= effect['damage']
-                        effect['attacker'].energy += effect['energy_delta']
-                        for mod in effect['modifiers']:
-                            stat = mod['stat']
-                            max_stat_delta = 4
-                            v = mod['target'].modifiers[stat] + mod['delta']
-                            v = max(-max_stat_delta, min(max_stat_delta, v))
-                            mod['target'].modifiers[stat] = v
-                        resolved.append(effect)
+                if effect['attacker'].hp <= 0:
+                    effect['fizzled'] = True
+
+            for effect in effects:
+                if not effect.get('fizzled', False):
+                    effect['target'].hp -= effect['damage']
+                    effect['attacker'].energy += effect['energy_delta']
+                    for mod in effect['modifiers']:
+                        stat = mod['stat']
+                        max_stat_delta = 4
+                        v = mod['target'].modifiers[stat] + mod['delta']
+                        v = max(-max_stat_delta, min(max_stat_delta, v))
+                        mod['target'].modifiers[stat] = v
+                    resolved.append(effect)
+                    self.log_event({'desc': 'resolved effect: {}'.format(effect['desc']), 'clock': self.clock})
+                    self.log_event({'desc': 'new hp: {}'.format(effect['target'].hp)})
+                    if effect['target'].hp <= 0:
+                        self.log_event({'desc': 'FEINT!'})
+                        # TODO: add feint to the priority queue and handle it
+
+                        raise NotImplementedError
+                    # self.log_event(effect)
 
         # Need to figure out the right quing system
         # action = 'fast_move'
@@ -284,7 +368,7 @@ class Trainer(Actor):
         self.initialize()
 
     def __nice__(self):
-        return ub.repr2(self.pokemon)
+        return f'shields={self.shields}'
 
     @classmethod
     def random(cls):
@@ -554,7 +638,7 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
         plt.legend()
 
     effect = {
-        'desc': f'{mon1.name!r}  (hp={mon1.hp}, energy={mon1.energy}) is using {move["name"]!r} against {mon2.name!r} (hp={mon2.hp}, energy={mon2.energy})',
+        'desc': f'{mon1.name!r}  (hp={mon1.hp}, energy={mon1.energy}) used {move["name"]!r} against {mon2.name!r} (hp={mon2.hp}, energy={mon2.energy})',
         'attacker': mon1,
         'target': mon2,
         'damage': damage,
