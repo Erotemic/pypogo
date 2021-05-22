@@ -620,6 +620,7 @@ def move_chart():
 
 def hundo_probability():
     """
+    # https://www.reddit.com/r/PokemonGOBattleLeague/comments/niegs9/minimum_ivs_for_master_league_missing_out_while/
 
     # natural hundo 0.0244140625%
     # 1 way out of 16 possibilities for each stat
@@ -647,7 +648,7 @@ def hundo_probability():
         prob_failure = (1 - p) ** num_trials
         prob_success = 1 - prob_failure
 
-        target = 0.9
+        target = 0.5
         loss = float(prob_success - target) ** 2
         if prob_success < target:
             loss += 1
