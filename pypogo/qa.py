@@ -476,7 +476,7 @@ def breakpoints():
 
 def move_chart():
     import pypogo
-    api = pypogo.api
+    api = pypogo.api  # NOQA
 
     import kwplot
     kwplot.autompl()
@@ -485,14 +485,13 @@ def move_chart():
 
     longform = []
     # for move in api.pvp_fast_moves.values():
-
     for move in api.pvp_charged_moves.values():
         assert len(move) == 1
         move = move[0]
         if move.get('buffs', None):
             move['hasbuff'] = True
             move.get('buffs')['activation_chance']
-
+            move.pop('buffs', None)
         longform.append(move)
 
     import pandas as pd
@@ -512,6 +511,11 @@ def move_chart():
     df['dpe'] = dpe
     df['prod'] = df['dps'] * df['eps']
     df = df.sort_values('prod')
+
+    df = df.sort_values('dpe')
+    # df = df[df['type'] == 'Steel']
+    df = df[df['type'] == 'Ice']
+    print(df.to_string())
 
     """
 
@@ -612,3 +616,50 @@ def move_chart():
     # pv = dfcell.pivot("eps", "dps", "score")
 
     # sns.heatmap(data=pv, annot=True, fmt="f", linewidths=.5, ax=ax)
+
+
+def hundo_probability():
+    """
+
+    # natural hundo 0.0244140625%
+    # 1 way out of 16 possibilities for each stat
+    ((1 / 16) ** 3) * 100
+
+    # special hundo: 0.46296296296296285%
+    # 1 ways out of 6 possibilities for each stat
+    ((1 / 6) ** 3) * 100
+
+    # purified hundo 0.6591796875%
+    # 3 ways out of 16 posibilities result in a hundo stat
+    ((3 / 16) ** 3) * 100
+    """
+    probs = {
+        'natural_hundo': ((1 / 16) ** 3),
+        'encounter_hundo': ((1 / 6) ** 3),
+        'purified_hundo': ((3 / 16) ** 3),
+    }
+
+    import scipy.optimize
+    import numpy as np
+
+    def find_halfway_point(num_trials, p):
+        num_trials = np.asarray(num_trials).ravel()[0]
+        prob_failure = (1 - p) ** num_trials
+        prob_success = 1 - prob_failure
+
+        target = 0.9
+        loss = float(prob_success - target) ** 2
+        if prob_success < target:
+            loss += 1
+        return loss
+
+    for k, p in probs.items():
+        # num_trials = 100
+        # prob_failure = (1 - p) ** num_trials
+        # prob_success = 1 - prob_failure
+        result = scipy.optimize.minimize(find_halfway_point, x0=1e1, args=(p,), method='Nelder-Mead')
+        num_trials = np.asarray(np.ceil(result.x)).ravel()[0]
+        # print('result = {!r}'.format(result))
+        prob_failure = (1 - p) ** num_trials
+        prob_success = 1 - prob_failure
+        print(f'{k} after {num_trials} trials = {prob_success * 100:.2f} %')
