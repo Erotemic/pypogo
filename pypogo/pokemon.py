@@ -978,6 +978,41 @@ class Pokemon(ub.NiceRepr):
         else:
             self.ivs = ivs
 
+        self.moves = moves
+        self.populate_moves()
+
+        # if moves is None:
+        #     cands = self.candidate_moveset()
+        #     fast_name = rng.choice(cands['fast'])
+        #     charged_names = rng.sample(cands['charged'], k=min(len(cands['charged']), 2))
+        #     self.moves = [fast_name] + charged_names
+        # else:
+        #     moves = list(moves)
+        #     cands = self.candidate_moveset()
+        #     cand_fast = set(map(self.api.normalize, cands['fast']))
+        #     cand_charged = set(map(self.api.normalize, cands['charged']))
+        #     move_have = set(map(self.api.normalize, moves))
+        #     if len(move_have & cand_fast) == 0:
+        #         fast_name = rng.choice(cands['fast'])
+        #         moves = moves + [fast_name]
+        #     if len(move_have & cand_charged) == 0:
+        #         charge_name = rng.choice(cands['charged'])
+        #         moves = moves + [charge_name]
+        #     self.moves = moves
+
+        self.populate_all()
+        return self
+
+    def populate_moves(self, rng=None):
+        if rng is None:
+            import random
+            rng = random.Random()
+
+        if self.moves is None:
+            moves = []
+        else:
+            moves = list(self.moves)
+
         if moves is None:
             cands = self.candidate_moveset()
             fast_name = rng.choice(cands['fast'])
@@ -996,9 +1031,7 @@ class Pokemon(ub.NiceRepr):
                 charge_name = rng.choice(cands['charged'])
                 moves = moves + [charge_name]
             self.moves = moves
-
-        self.populate_all()
-        return self
+        pass
 
     def populate_move_stats(self):
         """
@@ -1197,6 +1230,11 @@ class Pokemon(ub.NiceRepr):
                 part = move.upper().replace(' ', '_').replace(')', '').replace('(', '')
                 part = fixup.get(part, part)
                 parts.append(part)
+
+        if self.level is not None:
+            if self.ivs and all(v is not None for v in self.ivs):
+                parts.extend(list(map(str, [self.level, *self.ivs])))
+
         line = ','.join([pvpoke_id] + parts)
         return line
 

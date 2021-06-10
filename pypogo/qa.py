@@ -664,3 +664,23 @@ def hundo_probability():
         prob_failure = (1 - p) ** num_trials
         prob_success = 1 - prob_failure
         print(f'{k} after {num_trials} trials = {prob_success * 100:.2f} %')
+
+
+def obstagoon():
+    import pypogo
+    mon = pypogo.Pokemon('obstagoon')
+
+    mon.league_ranking_table(max_cp=1500, min_iv=10)
+    z = mon.league_ranking_table(max_cp=2500, min_iv=10)
+
+    have_ivs = [
+        [10, 15, 14],
+        [11, 13, 14],
+        [10, 14, 14],
+        [10, 11, 15],
+        [10, 12, 13],
+        [11, 10, 12],
+        # [12, 11, 15],
+    ]
+
+    z.set_index(['iva', 'ivd', 'ivs']).iloc[have_ivs]
