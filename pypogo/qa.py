@@ -684,3 +684,20 @@ def obstagoon():
     ]
 
     z.set_index(['iva', 'ivd', 'ivs']).iloc[have_ivs]
+
+def lapras():
+    import pypogo
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=41.5)
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=40.5)
+
+    table = mon.league_ranking_table(2500)
+    print('mon.stat_product_k = {!r}'.format(mon.stat_product_k))
+
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=40.5)
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=41)
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=41.5)
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=42)
+    mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=42.5)
+    print(table[table.stat_product_k >= mon.stat_product_k])
+
+    z = mon.league_ranking_table(max_cp=2500, min_iv=10)

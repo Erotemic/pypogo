@@ -457,7 +457,7 @@ class Pokemon(ub.NiceRepr):
         }
         return base_stats
 
-    def league_ranking(self, have_ivs=None, max_cp=1500, max_level=51, min_iv=0, verbose=0, force=False):
+    def league_ranking(self, max_cp=1500, max_level=51, min_iv=0, have_ivs=None, verbose=0, force=False):
         """
         Given a set of IVs for this pokemon compute the league rankings
 
@@ -701,7 +701,7 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 15, 15),
             >>>     (12, 15, 15),
             >>> ]
-            >>> self.league_ranking(have_ivs)
+            >>> self.league_ranking(have_ivs=have_ivs)
 
             >>> have_ivs = [
             >>>     (4, 13, 10),
@@ -718,20 +718,20 @@ class Pokemon(ub.NiceRepr):
             >>> ]
             >>> self = Pokemon('gengar')
             >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
-            >>> self.league_ranking(have_ivs)
+            >>> self.league_ranking(have_ivs=have_ivs)
 
             >>> self = Pokemon('haunter')
             >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
-            >>> self.league_ranking(have_ivs)
+            >>> self.league_ranking(have_ivs=have_ivs)
 
             >>> have_ivs = [
             >>>     (12, 11, 14),
             >>>     (12, 15, 15),
             >>>     (15, 15, 15),
             >>> ]
-            >>> Pokemon('blaziken').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('blaziken').league_ranking(have_ivs, max_cp=2500)
-            >>> Pokemon('blaziken').league_ranking(have_ivs, max_cp=np.inf)
+            >>> Pokemon('blaziken').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('blaziken').league_ranking(have_ivs=have_ivs, max_cp=2500)
+            >>> Pokemon('blaziken').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (0, 2, 14),
@@ -745,9 +745,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (6, 15, 11),  # purified
             >>>     (13, 15, 14),  # purified
             >>> ]
-            >>> Pokemon('swampert').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('swampert').league_ranking(have_ivs, max_cp=2500)
-            >>> Pokemon('swampert').league_ranking(have_ivs, max_cp=np.inf)
+            >>> Pokemon('swampert').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('swampert').league_ranking(have_ivs=have_ivs, max_cp=2500)
+            >>> Pokemon('swampert').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (1, 2, 15),
@@ -757,8 +757,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (14, 13, 15),
             >>>     (15, 15, 10),
             >>> ]
-            >>> Pokemon('sceptile').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('sceptile').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('sceptile').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('sceptile').league_ranking(have_ivs=have_ivs, max_cp=2500)
 
             >>> have_ivs = [
             >>>     (14, 14, 15),
@@ -766,7 +766,7 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 15, 15),
             >>>     (15, 15, 15),
             >>> ]
-            >>> Pokemon('rhyperior').league_ranking(have_ivs, max_cp=np.inf)
+            >>> Pokemon('rhyperior').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (14, 14, 14),
@@ -775,7 +775,7 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 13, 14),
             >>>     (8, 6, 8),
             >>> ]
-            >>> Pokemon('vigoroth').league_ranking(have_ivs, max_cp=1500)
+            >>> Pokemon('vigoroth').league_ranking(have_ivs=have_ivs, max_cp=1500)
 
 
             >>> have_ivs = [
@@ -786,8 +786,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (7, 15, 15),
             >>>     (10, 15, 15),
             >>> ]
-            >>> Pokemon('shiftry').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('shiftry').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('shiftry').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('shiftry').league_ranking(have_ivs=have_ivs, max_cp=2500)
 
             >>> have_ivs = [
             >>>     (15, 15, 14),
@@ -798,8 +798,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 14, 14),
             >>>     (10, 14, 15),
             >>> ]
-            >>> Pokemon('alakazam').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('alakazam').league_ranking(have_ivs, max_cp=2500)
+            >>> Pokemon('alakazam').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('alakazam').league_ranking(have_ivs=have_ivs, max_cp=2500)
 
             >>> have_ivs = [
             >>>     (0, 15, 6),
@@ -807,9 +807,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (12, 12, 11),
             >>>     (15, 10, 12),
             >>> ]
-            >>> Pokemon('salamence').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('salamence').league_ranking(have_ivs, max_cp=2500)
-            >>> Pokemon('salamence').league_ranking(have_ivs, max_cp=np.inf)
+            >>> Pokemon('salamence').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('salamence').league_ranking(have_ivs=have_ivs, max_cp=2500)
+            >>> Pokemon('salamence').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (6, 10, 10),
@@ -818,9 +818,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 15, 15),
             >>>     (15, 15, 5),
             >>> ]
-            >>> Pokemon('flygon').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('flygon').league_ranking(have_ivs, max_cp=2500)
-            >>> Pokemon('flygon').league_ranking(have_ivs, max_cp=np.inf)
+            >>> Pokemon('flygon').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('flygon').league_ranking(have_ivs=have_ivs, max_cp=2500)
+            >>> Pokemon('flygon').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
 
             >>> have_ivs = [
             >>>     (6, 11, 11),
@@ -830,9 +830,9 @@ class Pokemon(ub.NiceRepr):
             >>>     (15, 12, 15),
             >>>     (15, 7, 15),
             >>> ]
-            >>> Pokemon('mamoswine').league_ranking(have_ivs, max_cp=1500)
-            >>> Pokemon('mamoswine').league_ranking(have_ivs, max_cp=2500)
-            >>> Pokemon('mamoswine').league_ranking(have_ivs, max_cp=np.inf)
+            >>> Pokemon('mamoswine').league_ranking(have_ivs=have_ivs, max_cp=1500)
+            >>> Pokemon('mamoswine').league_ranking(have_ivs=have_ivs, max_cp=2500)
+            >>> Pokemon('mamoswine').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
 
             >>> pd.options.display.max_rows = 100
             >>> pd.options.display.min_rows = 40
@@ -854,8 +854,8 @@ class Pokemon(ub.NiceRepr):
             >>>     (13, 15, 10),
             >>>     (15, 15, 11),
             >>> ]
-            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=1500, min_iv=10, max_level=51)
-            >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=2500, min_iv=10, max_level=51)
+            >>> _ = Pokemon('registeel').league_ranking(have_ivs=have_ivs, max_cp=1500, min_iv=10, max_level=51)
+            >>> _ = Pokemon('registeel').league_ranking(have_ivs=have_ivs, max_cp=2500, min_iv=10, max_level=51)
 
         """
         rows = []
