@@ -350,6 +350,36 @@ class Pokemon(ub.NiceRepr):
             other = Pokemon(self.name, form=form)
             yield other
 
+    @property
+    def can_evolve(self):
+        # TODO: check form restriction
+        # Our form has to match one of the valid forms to evolve.
+        flag = len(self.api.evo_graph.succ[self.name]) > 0
+        if flag:
+            matches_form = False
+            for info in self.api.name_to_evolutions[self.name]:
+                if info['form'] == self.form:
+                    matches_form = True
+            return matches_form
+        return False
+
+    @property
+    def is_evolved(self):
+        # Are pokemon like AWak AChu evolved?
+        return len(self.api.evo_graph.pred[self.name]) > 0
+
+    def evolution_stage(self):
+        # TODO: check form restriction
+        # Our form has to match one of the valid forms to evolve.
+        name = self.name
+        stage = 0
+        prev = self.api.evo_graph.pred[name]
+        while prev:
+            name = prev[0]
+            stage += 1
+            prev = self.api.evo_graph.pred[name]
+        return stage
+
     def family(self, ancestors=True, node=False, onlyadj=False):
         """
         Get other members of this pokemon family
@@ -858,48 +888,10 @@ class Pokemon(ub.NiceRepr):
             >>> _ = Pokemon('registeel').league_ranking(have_ivs, max_cp=2500, min_iv=10, max_level=51)
 
         """
-        rows = []
-        iva_range = list(range(min_iv, 16))
-        ivd_range = list(range(min_iv, 16))
-        ivs_range = list(range(min_iv, 16))
-
-        for iva, ivd, ivs in it.product(iva_range, ivd_range, ivs_range):
-            attack = self.info['base_attack'] + iva
-            defense = self.info['base_defense'] + ivd
-            stamina = self.info['base_stamina'] + ivs
-
-            best_level = None
-            best_cp = None
-            best_adjusted = None
-            for level in list(np.arange(1, max_level + 0.5, 0.5)):
-                cand_cp, adjusted = calc_cp(attack, defense, stamina, level)
-                if cand_cp <= max_cp:
-                    best_cp = cand_cp
-                    best_level = level
-                    best_adjusted = adjusted
-                else:
-                    break
-
-            row = {
-                'iva': iva,
-                'ivd': ivd,
-                'ivs': ivs,
-                'cp': best_cp,
-                'level': best_level,
-                'attack': best_adjusted['attack'],
-                'defense': best_adjusted['defense'],
-                'stamina': best_adjusted['stamina'],
-            }
-            rows.append(row)
-
-        df = pd.DataFrame.from_dict(rows)
-        df['stat_product_k'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
-        df = df.sort_values('stat_product_k', ascending=False)
-        df['rank'] = np.arange(1, len(df) + 1)
-        df = df.set_index('rank', drop=False)
-        min_ = df['stat_product_k'].min()
-        max_ = df['stat_product_k'].max()
-        df['percent'] = ((df['stat_product_k'] - min_) / (max_ - min_)) * 100
+        base_attack = self.info['base_attack']
+        base_defense = self.info['base_defense']
+        base_stamina = self.info['base_stamina']
+        df = _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp, min_iv)
         return df
 
     @classmethod
@@ -1167,16 +1159,127 @@ class Pokemon(ub.NiceRepr):
         }
         form_ = self.form.lower()
 
+        recognized_pvp_forms = {
+            'shadow',
+
+            'alola',
+
+            'galarian',
+            'galarian_standard',
+            'galarian_zen',
+            'standard',
+            'zen'
+
+            'sunny',
+            'overcast',
+
+            'west_sea',
+            'east_sea',
+
+            'altered',
+            'origin',
+
+            'incarnate',
+            'therian',
+
+            'rainy',
+            'snowy',
+
+            'speed',
+            'defense',
+            'attack',
+        }
+
+        unrecognized_pvp_forms = {
+            '2020',
+            '2021',
+            'copy_2019',
+            'costume_2020',
+            'adventure_hat_2020',
+            'autumn',
+            'summer',
+            'spring',
+            'winter',
+            'vs_2019',
+            'fall_2019',
+            'winter_2020',
+        }
+
+        undetermined_form = {
+            'purified',
+
+            'black',
+            'white',
+
+            'blue_striped',
+            'red_striped',
+
+            'burn',
+            'chill',
+            'frost',
+            'heat',
+
+            'douse',
+
+            'bug',
+            'dark',
+            'dragon',
+            'electric',
+            'fairy',
+            'fighting',
+            'fire',
+            'flying',
+            'ghost',
+            'grass',
+            'ground',
+            'ice',
+            'poison',
+            'psychic',
+            'rock',
+            'steel',
+            'water',
+
+            'fan',
+
+            'female',
+
+            'land',
+
+            'mow',
+            'normal',
+            'ordinary',
+
+            'a',
+            'aria',
+            'pirouette',
+            'plant',
+            'resolute',
+            'sandy',
+            'shock',
+            'sky',
+            'trash',
+            'wash',
+        }
+
         form_map = {
             'alola': 'alolan',
-            'east_sea': 'east',
-            'west_sea': 'west',
+            # 'east_sea': 'east',
+            # 'west_sea': 'west',
             'normal': '',
             'shadow': '',
         }
         pvpoke_form = form_map.get(form_, form_)
 
+        if pvpoke_form == 'purified':
+            pvpoke_form = ''
+
+        if pvpoke_form == 'female' and name == 'frillish':
+            pvpoke_form = ''
+
         if pvpoke_form == 'galarian' and name in only_galar:
+            pvpoke_form = ''
+
+        if pvpoke_form in unrecognized_pvp_forms:
             pvpoke_form = ''
 
         if pvpoke_form:
@@ -1390,3 +1493,50 @@ def calc_cp(attack, defense, stamina, level):
 #     def __init__(moves):
 #         pass
 #     pass
+
+
+@ub.memoize
+def _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp, min_iv):
+    rows = []
+    iva_range = list(range(min_iv, 16))
+    ivd_range = list(range(min_iv, 16))
+    ivs_range = list(range(min_iv, 16))
+
+    for iva, ivd, ivs in it.product(iva_range, ivd_range, ivs_range):
+        attack = base_attack + iva
+        defense = base_defense + ivd
+        stamina = base_stamina + ivs
+
+        best_level = None
+        best_cp = None
+        best_adjusted = None
+        for level in list(np.arange(1, max_level + 0.5, 0.5)):
+            cand_cp, adjusted = calc_cp(attack, defense, stamina, level)
+            if cand_cp <= max_cp:
+                best_cp = cand_cp
+                best_level = level
+                best_adjusted = adjusted
+            else:
+                break
+
+        row = {
+            'iva': iva,
+            'ivd': ivd,
+            'ivs': ivs,
+            'cp': best_cp,
+            'level': best_level,
+            'attack': best_adjusted['attack'],
+            'defense': best_adjusted['defense'],
+            'stamina': best_adjusted['stamina'],
+        }
+        rows.append(row)
+
+    df = pd.DataFrame.from_dict(rows)
+    df['stat_product_k'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
+    df = df.sort_values('stat_product_k', ascending=False)
+    df['rank'] = np.arange(1, len(df) + 1)
+    df = df.set_index('rank', drop=False)
+    min_ = df['stat_product_k'].min()
+    max_ = df['stat_product_k'].max()
+    df['percent'] = ((df['stat_product_k'] - min_) / (max_ - min_)) * 100
+    return df
