@@ -445,6 +445,19 @@ class PogoAPI(ub.NiceRepr):
         api.LEVEL_CAP = 51
         return info
 
+    def enumerate_all_pokemon(api):
+        import pypogo
+        # api.data['pokemon_forms']
+        for name in api.name_to_type.keys():
+            infos1 = api.name_to_type[name]
+            infos2 = api.name_to_stats[name]
+            assert {d['form'] for d in infos2} == {d['form'] for d in infos1}
+            for info in infos1:
+                info['form']
+                shadow = info['form'] == 'Shadow'
+                mon = pypogo.Pokemon(name, form=info['form'], shadow=shadow)
+                yield mon
+
 
 # HACK: Make a global API variable
 # we should likey do some lazy initialization or something better

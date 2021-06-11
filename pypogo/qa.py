@@ -666,6 +666,29 @@ def hundo_probability():
         print(f'{k} after {num_trials} trials = {prob_success * 100:.2f} %')
 
 
+def element_cup():
+    elements = {'Water', 'Grass', 'Fire'}
+    import pypogo
+    candidates = []
+    for mon in ub.ProgIter(pypogo.api.enumerate_all_pokemon()):
+        if mon.can_evolve and not mon.is_evolved:
+            if set(mon.typing) & elements:
+                candidates.append(mon)
+
+    # candidates = [mon.maximize(500) for mon in ub.ProgIter(candidates, desc='maximizing')]
+
+    print('\n'.join(ub.oset([mon.to_pvpoke_import_line() for mon in candidates])))
+
+    # # ub.argmin([mon.cp for mon in candidates])
+    cand_names = {
+        # mon.name.capitalize() + (' (Shadow)' if mon.shadow else '')
+        mon.name
+        for mon in candidates
+    }
+    liststr = ', '.join(cand_names)
+    print(liststr)
+
+
 def obstagoon():
     import pypogo
     mon = pypogo.Pokemon('obstagoon')
