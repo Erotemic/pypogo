@@ -687,3 +687,23 @@ def element_cup():
     }
     liststr = ', '.join(cand_names)
     print(liststr)
+
+
+def obstagoon():
+    import pypogo
+    mon = pypogo.Pokemon('obstagoon')
+
+    mon.league_ranking_table(max_cp=1500, min_iv=10)
+    z = mon.league_ranking_table(max_cp=2500, min_iv=10)
+
+    have_ivs = [
+        [10, 15, 14],
+        [11, 13, 14],
+        [10, 14, 14],
+        [10, 11, 15],
+        [10, 12, 13],
+        [11, 10, 12],
+        # [12, 11, 15],
+    ]
+
+    z.set_index(['iva', 'ivd', 'ivs']).iloc[have_ivs]
