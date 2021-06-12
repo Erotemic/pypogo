@@ -724,3 +724,65 @@ def lapras():
     print(table[table.stat_product_k >= mon.stat_product_k])
 
     z = mon.league_ranking_table(max_cp=2500, min_iv=10)
+
+
+def wild_lucky_encounter_rank_breakdown():
+    import pypogo
+    mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
+
+    for max_cp in [1500, 2500]:
+        print('\n\n!!!-----------')
+        print('max_cp = {!r}'.format(max_cp))
+
+        tables0 = {
+            'wild_51': mon.league_ranking_table(max_cp, min_iv=0, max_level=51),
+            'encounter_51': mon.league_ranking_table(max_cp, min_iv=10, max_level=51),
+            # 'lucky_51': mon.league_ranking_table(max_cp, min_iv=12, max_level=51),
+
+            # 'wild_47': mon.league_ranking_table(max_cp, min_iv=0, max_level=47),
+            # 'encounter_47': mon.league_ranking_table(max_cp, min_iv=10, max_level=47),
+            # 'lucky_47': mon.league_ranking_table(max_cp, min_iv=12, max_level=47),
+
+            # 'wild_50': mon.league_ranking_table(max_cp, min_iv=0, max_level=50),
+            # 'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
+            # 'lucky_50': mon.league_ranking_table(max_cp, min_iv=12, max_level=50),
+
+            # 'wild_41': mon.league_ranking_table(max_cp, min_iv=0, max_level=41),
+            # 'encounter_41': mon.league_ranking_table(max_cp, min_iv=10, max_level=41),
+            # 'lucky_41': mon.league_ranking_table(max_cp, min_iv=12, max_level=41),
+
+            # 'wild_40': mon.league_ranking_table(max_cp, min_iv=0, max_level=40),
+            # 'encounter_40': mon.league_ranking_table(max_cp, min_iv=10, max_level=40),
+            # 'lucky_40': mon.league_ranking_table(max_cp, min_iv=12, max_level=40),
+        }
+
+        tables = {}
+        rank_cols = []
+        for key, val in tables0.items():
+            col = key + '_rank'
+            rank_cols.append(col)
+            val.index.name = col
+            val = val.set_index(['iva', 'ivd', 'ivs'])
+            # val.drop
+            val[col] = val['rank']
+            val = val.drop('rank', axis=1)
+            val = val.drop('percent', axis=1)
+            tables[key] = val.copy()
+
+        for key, val in tables.items():
+            col = key + '_rank'
+            for key1, val1 in tables.items():
+                col1 = key1 + '_rank'
+                if key != key1:
+                    common = val1.index.intersection(val.index)
+                    val.loc[common, col1] = val1.loc[common, col1]
+
+        for key, table in tables.items():
+            print('\n--key = {!r}'.format(key))
+            first_part = ub.oset(table.columns) - rank_cols
+            table = table.reindex(list(first_part) + rank_cols, axis=1)
+            print(table)
+
+        # import pandas as pd
+        # combo = pd.concat(list(tables.values()))
+        # combo = combo.sort_values('stat_product_k')
