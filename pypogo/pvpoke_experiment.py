@@ -55,18 +55,198 @@ def run_pvpoke_ultra_experiment():
 
     !pip install selenium
     """
+    """
+    Relevant page items:
+
+    <button class="add-poke-btn button">+ Add Pokemon</button>
+    '//*[@id="main"]/div[3]/div[3]/div/div[1]/button[1]'
+    '/html/body/div[1]/div/div[3]/div[3]/div/div[1]/button[1]'
+
+    <input class="poke-search" type="text" placeholder="Search name">
+    /html/body/div[5]/div/div[3]/div[1]/input
+
+
+    /html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/a/span[1]
+
+
+    Level Cap
+    /html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[2]/div[2]/div[5]
+
+
+    # IV GROUP
+    ivs-group
+
+    save-poke
+    """
     from selenium import webdriver
     from selenium.webdriver.common.keys import Keys
     import networkx as nx
     import ubelt as ub
+    import os
 
-    # os.environ['webdriver.chrome.driver'] = str(ensure_selenium_chromedriver())
+    # Requires the driver be in the PATH
+    fpath = ensure_selenium_chromedriver()
+    os.environ['PATH'] = os.pathsep.join(
+        ub.oset(os.environ['PATH'].split(os.pathsep)) |
+        ub.oset([str(fpath.parent)]))
 
     url = 'https://pvpoke.com/battle/matrix/'
     # chrome_exe = ub.find_exe("google-chrome")
     driver = webdriver.Chrome()
     driver.get(url)
 
+    from selenium.webdriver.support.ui import Select
+
+    leage_select = driver.find_elements_by_class_name('league-select')[0]
+    leage_select.click()
+    leage_select.send_keys('Master League (Level 40)')
+    leage_select.click()
+
+    leage_select.text.split('\n')
+    leage_select.send_keys('\n')
+    leage_select.send_keys('\n')
+
+    import time
+
+    def add_pokemon(mon):
+        add_poke1_button = driver.find_elements_by_class_name('add-poke-btn')[0]
+        add_poke1_button.click()
+
+        select_drop = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/select')
+
+        if 1:
+            import xdev
+            all_names = select_drop.text.split('\n')
+            distances = xdev.edit_distance(mon.display_name(), all_names)
+            chosen_name = all_names[ub.argmin(distances)]
+        else:
+            chosen_name = mon.name
+
+        search_box = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/input')
+        search_box.send_keys(chosen_name)
+
+        advanced_ivs_arrow = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/a/span[1]')
+        advanced_ivs_arrow.click()
+
+        level40_cap = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[2]/div[2]/div[2]')
+        level41_cap = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[2]/div[2]/div[3]')
+        level50_cap = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[2]/div[2]/div[4]')
+        level51_cap = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[2]/div[2]/div[5]')
+
+        if mon.level >= 51:
+            level51_cap.click()
+        elif mon.level >= 50:
+            level50_cap.click()
+        elif mon.level >= 41:
+            level41_cap.click()
+        elif mon.level >= 40:
+            level40_cap.click()
+
+        level_box = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[1]/input')
+        level_box.click()
+        level_box.clear()
+        level_box.clear()
+        level_box.send_keys(str(mon.level))
+
+        iv_a = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[1]/div/input[1]')
+        iv_d = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[1]/div/input[2]')
+        iv_s = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[9]/div/div[1]/div/input[3]')
+
+        # TODO
+        # driver.find_elements_by_class_name('move-select')
+
+        iv_a.clear()
+        iv_a.send_keys(str(mon.ivs[0]))
+
+        iv_d.clear()
+        iv_d.send_keys(str(mon.ivs[1]))
+
+        iv_s.clear()
+        iv_s.send_keys(str(mon.ivs[2]))
+
+        save_button = driver.find_elements_by_class_name('save-poke')[0]
+        save_button.click()
+
+    quickfills = driver.find_elements_by_class_name('quick-fill-select')
+    quickfill = quickfills[1]
+    quickfill.text.split('\n')
+    quickfill.click()
+    quickfill.send_keys('Master League Meta')
+    quickfill.click()
+
+    import pypogo
+    # mon1 = pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40)
+    # mon2 = pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=41)
+
+    # Test the effect of best buddies vs the master league
+    mons = [
+        pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40),
+        pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=41),
+        pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=40),
+        pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=41),
+        pypogo.Pokemon('Dragonite', ivs=[15, 14, 15], level=40),
+        pypogo.Pokemon('Dragonite', ivs=[15, 14, 15], level=41),
+        pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=40),
+        pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=41),
+        pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=40),
+        pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=41),
+        pypogo.Pokemon('Groudon', ivs=[14, 14, 13], level=40),
+        pypogo.Pokemon('Groudon', ivs=[14, 14, 13], level=41),
+        pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=40),
+        pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=41),
+    ]
+    for mon in mons:
+        add_pokemon(mon)
+
+    battle_btn = driver.find_elements_by_class_name('battle-btn')[0]
+    battle_btn.click()
+
+    # Clear previous downloaded files
+    import pathlib
+    dlfolder = pathlib.Path(ub.expandpath('$HOME/Downloads'))
+    for old_fpath in list(dlfolder.glob('_vs*.csv')):
+        old_fpath.unlink()
+
+    import time
+    time.sleep(2.0)
+
+    # Download new data
+    dl_btn = driver.find_element_by_xpath('//*[@id="main"]/div[4]/div[9]/div/a')
+    dl_btn.click()
+
+    while len(list(dlfolder.glob('_vs*.csv'))) < 1:
+        pass
+
+    new_fpaths = list(dlfolder.glob('_vs*.csv'))
+    assert len(new_fpaths) == 1
+    fpath = new_fpaths[0]
+
+    import pandas as pd
+    data = pd.read_csv(fpath, header=0, index_col=0)
+
+    pairs = list(ub.iter_window(range(len(data)), step=2))
+
+    for i, j in pairs:
+        print('-----')
+        matchup0 = data.iloc[i]
+        matchup1 = data.iloc[j]
+
+        wins0 = matchup0 > 500
+        wins1 = matchup1 > 500
+        flips = (wins0 != wins1)
+        flipped_vs = matchup0.index[flips]
+        num_flips = sum(flips)
+        print('flipped_vs = {!r}'.format(flipped_vs))
+        print('num_flips = {!r}'.format(num_flips))
+        print(matchup0.mean())
+        print(matchup1.mean())
+        print(matchup0.mean())
+        print(matchup1.mean() / matchup0.mean())
+
+
+
+
+def _oldstuff():
     # import lxml
     # parser = lxml.etree.HTMLParser()
     # html = driver.execute_script("return document.documentElement.outerHTML")
