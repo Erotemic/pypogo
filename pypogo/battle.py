@@ -649,6 +649,7 @@ def compute_move_effect(mon1, mon2, move, charge=1.0, rng=None):
         'effectiveness': effectiveness,
         'adjusted_defense': adjusted_defense,
         'defense_modifier_factor': defense_modifier_factor,
+        'attack_modifier_factor': attack_modifier_factor,
         'defense_shadow_factor': defense_shadow_factor,
         'attack_power': attack_power,
         'defense_power': defense_power,

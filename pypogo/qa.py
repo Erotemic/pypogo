@@ -708,6 +708,7 @@ def obstagoon():
 
     z.set_index(['iva', 'ivd', 'ivs']).iloc[have_ivs]
 
+
 def lapras():
     import pypogo
     mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=41.5)
@@ -723,14 +724,102 @@ def lapras():
     mon = pypogo.Pokemon.random('lapras', ivs=[1, 15, 12], level=42.5)
     print(table[table.stat_product_k >= mon.stat_product_k])
 
-    z = mon.league_ranking_table(max_cp=2500, min_iv=10)
+    # z = mon.league_ranking_table(max_cp=2500, min_iv=10)
 
 
 def wild_lucky_encounter_rank_breakdown():
     import pypogo
-    mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
+    # mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
+    mon = pypogo.Pokemon.random('deoxys', form='defense')
 
-    for max_cp in [1500, 2500]:
+    # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
+
+    #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
+    optimal_spreads = [
+        tuple([int(x) for x in p.strip().split('/') if x])
+        for p in ub.codeblock(
+            '''
+            10/15/13
+            10/10/15
+            11/10/13
+            12/15/15
+            11/13/12
+            13/15/13
+            13/11/15
+            12/13/10
+            11/15/11
+            11/15/10
+            14/12/13
+            15/14/10
+            15/10/12
+            ''').split('\n')]
+
+    have_ivs = [tuple([int(x) for x in p.strip().split(',') if x])
+                for p in ub.codeblock(
+        '''
+        13,12,15
+        13,11,13
+        12,15,10
+        15,15,12
+        15,12,14
+        10,13,15,
+        11,14,12
+        10,13,13,
+        11,11,12,
+        10,11,11
+        15,12,14,
+        13,12,11,
+        13,12,15,
+        10,12,13
+        10,10,12
+        11,15,11
+        10, 10, 12,
+        10, 12, 14,
+        10, 12, 14,
+        10, 13, 10,
+        10, 13, 12,
+        10, 14, 14,
+        11, 12, 14,
+        11, 14, 12,
+        11, 14, 15,
+        11, 15, 11,
+        11, 15, 11,
+        11, 15, 12,
+        11, 15, 12,
+        12, 10, 12,
+        12, 11, 12,
+        12, 12, 15,
+        12, 14, 11,
+        12, 14, 15,
+        12, 15, 11,
+        12, 15, 12
+        12, 15, 12,
+        13, 11, 13
+        13, 12, 10
+        13, 12, 13,
+        13, 13, 10,
+        13, 13, 11,
+        13, 15, 10,
+        13, 15, 11,
+        13, 15, 11,
+        14, 10, 12,
+        14, 11, 10,
+        14, 11, 10,
+        14, 13, 11
+        14, 13, 14,
+        15, 10, 12
+        15, 11, 10,
+        15, 11, 11,
+        15, 12, 11
+        ''').split('\n')]
+
+    print(set(optimal_spreads) & (set(have_ivs)))
+
+    max_cps = [
+        1500,
+        # 2500
+    ]
+    for max_cp in max_cps:
         print('\n\n!!!-----------')
         print('max_cp = {!r}'.format(max_cp))
 
@@ -781,8 +870,172 @@ def wild_lucky_encounter_rank_breakdown():
             print('\n--key = {!r}'.format(key))
             first_part = ub.oset(table.columns) - rank_cols
             table = table.reindex(list(first_part) + rank_cols, axis=1)
-            print(table)
 
+            #
+            if 1:
+                # Add info about
+                raid_level_base = 20
+                # raid_level_boost = 25
+                raid_cps = []
+                for ivs in table.index:
+                    raid_mon = mon.copy(level=raid_level_base, ivs=ivs)
+                    raid_cps.append(raid_mon.cp)
+                table['raid_cp'] = raid_cps
+
+            print(table.to_string(max_rows=50))
+
+            if 1:
+                # The DD breakpoint attributes we care about
+                # Seems like only 13, 11, 15, and 13, 10, 15 satisfy this
+                print(table[(table.stamina >= 98) & (table.attack >= 101.5)])
+                print(table[(table.stamina >= 98) & (table.attack >= 101)])
+                print(table[(table.stamina >= 98)])
+
+            if optimal_spreads:
+                print('interest')
+                print(table.loc[table.index.intersection(optimal_spreads)])
+
+                print('have-of-interest')
+                print(table.loc[table.index.intersection(optimal_spreads).intersection(have_ivs)])
+
+            if have_ivs:
+                print('have')
+                print(table.loc[table.index.intersection(have_ivs)])
+
+
+        table.loc[set(have_ivs)].sort_values('encounter_51_rank')
+        x = table.loc[set(have_ivs)].sort_values('encounter_51_rank')
+        print(x[(x.stamina >= 98)])
         # import pandas as pd
         # combo = pd.concat(list(tables.values()))
         # combo = combo.sort_values('stat_product_k')
+
+
+def compute_breakpoints(mon1, mon2, move):
+    """
+    TODO:
+        - [ ] Search over the range of mon1 attack ivs and mon2 defense ivs
+        while still maximizing for the CP cap.
+
+    Example:
+        import pypogo
+        mon1 = pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'psycho boost', 'rock slide']).maximize(1500)
+        mon2 = pypogo.Pokemon.random('ninetales', form='alola').maximize(1500)
+
+        move = mon1.pvp_fast_move
+        compute_breakpoints(mon1, mon2, move)
+    """
+    import numpy as np
+    from pypogo.battle import compute_move_effect
+    #
+    # Breakpoints for each move
+    mon1.adjusted['attack']
+    info = compute_move_effect(mon1, mon2, move)
+
+    # adjusted_attack = info['adjusted_attack']
+    attack_shadow_factor = info['attack_shadow_factor']
+    pvp_bonus_multiplier = info['pvp_bonus_multiplier']
+    effectiveness = info['effectiveness']
+    stab = info['stab']
+    attack_power = info['attack_power']
+
+    # adjusted_defense = info['adjusted_defense']
+
+    defense_power = info['defense_power']
+
+    move_power = move['power']
+    half = 0.5
+
+    damage_points = np.arange(info['damage'] // 2, int(info['damage'] * 2))
+
+    # Solve for points where the damage will change
+
+    break_points = (
+        ((damage_points - 1) * defense_power) /
+        (half * move_power * stab * effectiveness * attack_shadow_factor *
+         pvp_bonus_multiplier)
+    )
+
+    min_attack = mon1.adjusted['attack'] - 15
+    max_attack = mon1.adjusted['attack'] + 15
+
+    flags = break_points > min_attack
+    flags &= break_points < max_attack
+
+    damage_points_ = damage_points[flags]
+    break_points_ = break_points[flags]
+
+    print('move = {!r}'.format(move))
+    print('damage_points_ = {!r}'.format(damage_points_))
+    print('break_points_ = {!r}'.format(break_points_))
+
+
+def attack_breakpoint_grid(mon1, mon2, move):
+    """
+    Looks over the range of possible attack / defense stats two mon could
+    have and looks for how much damage they are doing
+    """
+    league_cp = 1500
+
+    mon1_min_iv = 10
+    mon2_min_iv = 0
+
+    mon1_ranks = mon1.league_ranking_table(league_cp, min_iv=mon1_min_iv)
+    mon2_ranks = mon2.league_ranking_table(league_cp, min_iv=mon2_min_iv)
+
+    mon2_ranks = mon2_ranks[mon2_ranks['rank'] > 200]
+
+    attack_range = mon1_ranks.attack.unique()
+    defense_range = mon2_ranks.defense.unique()
+    attack_range.sort()
+    defense_range.sort()
+
+    import numpy as np
+    from pypogo.battle import compute_move_effect
+    #
+    # Breakpoints for each move
+    mon1.adjusted['attack']
+    info = compute_move_effect(mon1, mon2, move)
+
+    attack_shadow_factor = info['attack_shadow_factor']
+    pvp_bonus_multiplier = info['pvp_bonus_multiplier']
+    effectiveness = info['effectiveness']
+    defense_shadow_factor = info['defense_shadow_factor']
+    defense_modifier_factor = info['defense_modifier_factor']
+    attack_modifier_factor = info['attack_modifier_factor']
+    stab = info['stab']
+    charge = 1
+
+    attack_power = (
+        pvp_bonus_multiplier *
+        charge *
+        stab *
+        attack_range[:, None] *
+        attack_modifier_factor *
+        attack_shadow_factor *
+        effectiveness
+    )
+
+    defense_power = (
+        defense_range[None, :] *
+        defense_modifier_factor *
+        defense_shadow_factor
+    )
+
+    half = 0.5  # not sure why a half is in the formula
+    move_power = move['power']
+
+    damage = np.floor(half * move_power * attack_power / defense_power) + 1
+    import xarray as xr
+    xr.DataArray(damage, dims=['a', 'd'], coords={'a': attack_range.ravel(), 'd': defense_range.ravel()})
+    import pandas as pd
+    df = pd.DataFrame(damage, index=attack_range.ravel(), columns=defense_range.ravel())
+    df.index.name = 'atk'
+    df.columns.name = 'def'
+    print(df.T.to_string())
+
+    damage_vals = np.unique(df.values)
+    max_damage = damage_vals.max()
+    df >= max_damage
+
+    # TODO: write code such that the takeaways are more interpretable here

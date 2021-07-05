@@ -77,12 +77,21 @@ def run_pvpoke_ultra_experiment():
     ivs-group
 
     save-poke
+
+    import sys, ubelt
+    sys.path.append(ubelt.expandpath('~/code/pypogo'))
+    from pypogo.pvpoke_experiment import *  # NOQA
+    from pypogo.pvpoke_experiment import _oldstuff
     """
     from selenium import webdriver
     from selenium.webdriver.common.keys import Keys
-    import networkx as nx
+    from selenium.webdriver.support.ui import Select
     import ubelt as ub
     import os
+    import pathlib
+    import time
+    import pandas as pd
+    import pypogo
 
     # Requires the driver be in the PATH
     fpath = ensure_selenium_chromedriver()
@@ -95,18 +104,91 @@ def run_pvpoke_ultra_experiment():
     driver = webdriver.Chrome()
     driver.get(url)
 
-    from selenium.webdriver.support.ui import Select
+    league = 'Great'
+    # league = 'Master40'
+    if league == 'Great':
+        league_box_target = 'Great League (CP 1500)'
+
+        have_ivs = list(ub.oset([tuple([int(x) for x in p.strip().split(',') if x])
+                                 for p in ub.codeblock(
+            '''
+            10, 10, 12,
+            10, 12, 14,
+            10, 12, 14,
+            10, 13, 10,
+            10, 13, 12,
+            10, 14, 14,
+            11, 12, 14,
+            11, 14, 12,
+            11, 14, 15,
+            11, 15, 11,
+            11, 15, 11,
+            11, 15, 12,
+            11, 15, 12,
+            12, 10, 12,
+            12, 11, 12,
+            12, 12, 15,
+            12, 14, 11,
+            12, 14, 15,
+            12, 15, 11,
+            12, 15, 12
+            12, 15, 12,
+            13, 11, 13
+            13, 12, 10
+            13, 12, 13,
+            13, 13, 10,
+            13, 13, 11,
+            13, 15, 10,
+            13, 15, 11,
+            13, 15, 11,
+            14, 10, 12,
+            14, 11, 10,
+            14, 11, 10,
+            14, 13, 11
+            14, 13, 14,
+            15, 10, 12
+            15, 11, 10,
+            15, 11, 11,
+            15, 12, 11
+            ''').split('\n')]))
+        to_check_mons = [
+            pypogo.Pokemon('Deoxys', form='defense', ivs=ivs, moves=['Counter', 'Rock Slide', 'Psycho Boost']).maximize(1500)
+            for ivs in have_ivs
+        ]
+        meta_text = 'Great League Meta'
+    elif league == 'Master40':
+        league_box_target = 'Master League (Level 40)'
+        meta_text = 'Master League Meta'
+        # Test the effect of best buddies vs the master league
+        to_check_mons = [
+            pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40),
+            pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=41),
+            pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=40),
+            pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=41),
+            pypogo.Pokemon('Dragonite', ivs=[15, 14, 15], level=40),
+            pypogo.Pokemon('Dragonite', ivs=[15, 14, 15], level=41),
+            pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=40),
+            pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=41),
+            pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=40),
+            pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=41),
+            pypogo.Pokemon('Groudon', ivs=[14, 14, 13], level=40),
+            pypogo.Pokemon('Groudon', ivs=[14, 14, 13], level=41),
+            pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=40),
+            pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=41),
+        ]
+        for mon in to_check_mons:
+            mon.populate_all()
+    else:
+        pass
 
     leage_select = driver.find_elements_by_class_name('league-select')[0]
     leage_select.click()
-    leage_select.send_keys('Master League (Level 40)')
+    leage_select.send_keys(league_box_target)
     leage_select.click()
 
     leage_select.text.split('\n')
     leage_select.send_keys('\n')
     leage_select.send_keys('\n')
-
-    import time
 
     def add_pokemon(mon):
         add_poke1_button = driver.find_elements_by_class_name('add-poke-btn')[0]
@@ -164,6 +246,26 @@ def run_pvpoke_ultra_experiment():
         iv_s.clear()
         iv_s.send_keys(str(mon.ivs[2]))
 
+        USE_MOVES = 1
+
+        if USE_MOVES:
+            mon.populate_all()
+
+            fast_select = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[10]/select[1]')
+            fast_select.click()
+            fast_select.send_keys(mon.pvp_fast_move['name'])
+            fast_select.send_keys(Keys.ENTER)
+
+            charge1_select = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[10]/select[2]')
+            charge1_select.click()
+            charge1_select.send_keys(mon.pvp_charge_moves[0]['name'])
+            charge1_select.send_keys(Keys.ENTER)
+
+            charge2_select = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[10]/select[3]')
+            charge2_select.click()
+            charge2_select.send_keys(mon.pvp_charge_moves[1]['name'])
+            charge2_select.send_keys(Keys.ENTER)
+
         save_button = driver.find_elements_by_class_name('save-poke')[0]
         save_button.click()
 
@@ -171,43 +273,37 @@ def run_pvpoke_ultra_experiment():
     quickfill = quickfills[1]
     quickfill.text.split('\n')
     quickfill.click()
-    quickfill.send_keys('Master League Meta')
+    quickfill.send_keys(meta_text)
     quickfill.click()
 
     import pypogo
     # mon1 = pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40)
     # mon2 = pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=41)
 
-    # Test the effect of best buddies vs the master league
-    mons = [
-        pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40),
-        pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=41),
-        pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=40),
-        pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=41),
-        pypogo.Pokemon('Dragonite', ivs=[15, 14, 15], level=40),
-        pypogo.Pokemon('Dragonite', ivs=[15, 14, 15], level=41),
-        pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=40),
-        pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=41),
-        pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=40),
-        pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=41),
-        pypogo.Pokemon('Groudon', ivs=[14, 14, 13], level=40),
-        pypogo.Pokemon('Groudon', ivs=[14, 14, 13], level=41),
-        pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=40),
-        pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=41),
-    ]
-    for mon in mons:
-        add_pokemon(mon)
+    if 1:
+        for mon in to_check_mons:
+            pass
+            add_pokemon(mon)
+
+    shield_selectors = driver.find_elements_by_class_name('shield-select')
+    shield_selectors[2].click()
+    shield_selectors[2].send_keys('No shields')
+    shield_selectors[2].send_keys(Keys.ENTER)
+
+    shield_selectors[3].click()
+    shield_selectors[3].send_keys('No shields')
+    shield_selectors[3].send_keys(Keys.ENTER)
+
+    shield_selectors[0].click()
 
     battle_btn = driver.find_elements_by_class_name('battle-btn')[0]
     battle_btn.click()
 
     # Clear previous downloaded files
-    import pathlib
     dlfolder = pathlib.Path(ub.expandpath('$HOME/Downloads'))
     for old_fpath in list(dlfolder.glob('_vs*.csv')):
         old_fpath.unlink()
 
-    import time
     time.sleep(2.0)
 
     # Download new data
@@ -221,27 +317,49 @@ def run_pvpoke_ultra_experiment():
     assert len(new_fpaths) == 1
     fpath = new_fpaths[0]
 
-    import pandas as pd
     data = pd.read_csv(fpath, header=0, index_col=0)
 
-    pairs = list(ub.iter_window(range(len(data)), step=2))
+    if 1:
+        # GROUP ANALYSIS
+        data.sum(axis=1).sort_values()
+        (data > 500).sum(axis=1).sort_values()
 
-    for i, j in pairs:
-        print('-----')
-        matchup0 = data.iloc[i]
-        matchup1 = data.iloc[j]
+        flipped = []
+        for key, col in data.T.iterrows():
+            if not ub.allsame(col > 500):
+                flipped.append(key)
 
-        wins0 = matchup0 > 500
-        wins1 = matchup1 > 500
-        flips = (wins0 != wins1)
-        flipped_vs = matchup0.index[flips]
-        num_flips = sum(flips)
-        print('flipped_vs = {!r}'.format(flipped_vs))
-        print('num_flips = {!r}'.format(num_flips))
-        print(matchup0.mean())
-        print(matchup1.mean())
-        print(matchup0.mean())
-        print(matchup1.mean() / matchup0.mean())
+        flip_df = data.loc[:, flipped]
+        def color(x):
+            if x > 500:
+                return ub.color_text(str(x), 'green')
+            else:
+                return ub.color_text(str(x), 'red')
+        print(flip_df.applymap(color))
+        print(flip_df.columns.tolist())
+
+
+        (data > 500)
+    else:
+        # PAIR ANALYSIS
+        pairs = list(ub.iter_window(range(len(data)), step=2))
+        for i, j in pairs:
+            print('-----')
+            matchup0 = data.iloc[i]
+            matchup1 = data.iloc[j]
+            delta = matchup1 - matchup0
+            print(delta[delta != 0])
+
+            wins0 = matchup0 > 500
+            wins1 = matchup1 > 500
+            flips = (wins0 != wins1)
+            flipped_vs = matchup0.index[flips]
+            num_flips = sum(flips)
+            print('flipped_vs = {!r}'.format(flipped_vs))
+            print('num_flips = {!r}'.format(num_flips))
+            print(matchup0.mean())
+            print(matchup1.mean())
+            print(matchup1.mean() / matchup0.mean())
 
 
 
@@ -325,9 +443,6 @@ def _oldstuff():
         print(line)
 
     # combo = pd.concat(tables.values(), join='inner', axis=0)
-
-
-
 
     dom = driver.find_elements_by_xpath("//*")
 

@@ -895,7 +895,7 @@ class Pokemon(ub.NiceRepr):
         return df
 
     @classmethod
-    def random(Pokemon, name=None, level=None, ivs=None, moves=None, shadow=None, rng=None):
+    def random(Pokemon, name=None, level=None, ivs=None, moves=None, form=None, shadow=None, rng=None):
         """
         Example:
             >>> from pypogo.pokemon import *  # NOQA
@@ -929,17 +929,6 @@ class Pokemon(ub.NiceRepr):
         elif isinstance(rng, int):
             rng = random.Random(rng)
 
-        if 0:
-            api = global_api()
-            for name in api.name_to_base:
-                mon = Pokemon.random(name=name)
-                flag = False
-                flag |= mon.base_stats['attack'] == 0
-                flag |= mon.base_stats['stamina'] == 0
-                flag |= mon.base_stats['defense'] == 0
-                if flag:
-                    print('mon = {}'.format(ub.repr2(mon, nl=1)))
-
         blocklist = {
             'smeargle',
             'honedge',
@@ -956,7 +945,7 @@ class Pokemon(ub.NiceRepr):
             valid_names = list(api.name_to_base)
             name = rng.choice(valid_names)
 
-        self = Pokemon(name, shadow=shadow)
+        self = Pokemon(name, form=form, shadow=shadow)
 
         max_level = 51
         if level is None:
