@@ -727,7 +727,7 @@ def lapras():
     # z = mon.league_ranking_table(max_cp=2500, min_iv=10)
 
 
-def wild_lucky_encounter_rank_breakdown():
+def deoxys():
     import pypogo
     # mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
     mon = pypogo.Pokemon.random('deoxys', form='defense')
@@ -735,7 +735,7 @@ def wild_lucky_encounter_rank_breakdown():
     # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
 
     #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
-    optimal_spreads = [
+    great_optimal_spreads = [
         tuple([int(x) for x in p.strip().split('/') if x])
         for p in ub.codeblock(
             '''
@@ -754,9 +754,77 @@ def wild_lucky_encounter_rank_breakdown():
             15/10/12
             ''').split('\n')]
 
+    optimal_spreads_ultra = [
+        tuple([int(x) for x in p.strip().split('/') if x])
+        for p in ub.codeblock(
+            '''
+            15/11/12
+            15/11/10
+            15/13/11
+            15/10/12
+            15/15/10
+            15/10/10
+            15/12/11
+            15/12/15
+            14/10/14
+            15/11/15
+            15/10/15
+            ''').split('\n')]
+
     have_ivs = [tuple([int(x) for x in p.strip().split(',') if x])
                 for p in ub.codeblock(
         '''
+        15,11,14
+        14,12,10
+        11,14,12
+        14,11,10,
+        12,11,13,
+        10,12,14,
+        11,12,13,
+        13,12,12
+        11,13,11
+        10,15,15,
+        14,11,10,
+        14,14,11,
+        13,10,12
+        12,10,15
+        10,13,15,
+        10,13,11,
+        12,11,11,
+        12,10,10
+        12,10,14,
+        10,11,13
+        12,10,12,
+        12,14,10,
+        15,14,11,
+        10,14,15
+        14,10,13,
+        11,14,12,
+        14,12,15,
+        11,12,11
+        13,14,13
+        13,10,11,
+        10,12,12,
+        15,12,12
+        14,10,10,
+        11,10,15,
+        15,12,10,
+        15,14,11,
+        14,15,10,
+        15,14,13,
+        15,12,10,
+        15,13,13,
+        13,14,15,
+        11,13,13,
+        13,10,12,
+        14,13,12,
+        14,10,13,
+        10,10,14,
+        15,15,13,
+        10,12,14,
+        14,11,14,
+        12,15,11,
+        14,14,13,
         13,12,15
         13,11,13
         12,15,10
@@ -773,142 +841,187 @@ def wild_lucky_encounter_rank_breakdown():
         10,12,13
         10,10,12
         11,15,11
-        10, 10, 12,
-        10, 12, 14,
-        10, 12, 14,
-        10, 13, 10,
-        10, 13, 12,
-        10, 14, 14,
-        11, 12, 14,
-        11, 14, 12,
-        11, 14, 15,
-        11, 15, 11,
-        11, 15, 11,
-        11, 15, 12,
-        11, 15, 12,
-        12, 10, 12,
-        12, 11, 12,
-        12, 12, 15,
-        12, 14, 11,
-        12, 14, 15,
-        12, 15, 11,
-        12, 15, 12
-        12, 15, 12,
-        13, 11, 13
-        13, 12, 10
-        13, 12, 13,
-        13, 13, 10,
-        13, 13, 11,
-        13, 15, 10,
-        13, 15, 11,
-        13, 15, 11,
-        14, 10, 12,
-        14, 11, 10,
-        14, 11, 10,
-        14, 13, 11
-        14, 13, 14,
-        15, 10, 12
-        15, 11, 10,
-        15, 11, 11,
-        15, 12, 11
+        10,10,12,
+        10,12,14,
+        10,12,14,
+        10,13,10,
+        10,13,12,
+        10,14,14,
+        11,12,14,
+        11,14,12,
+        11,14,15,
+        11,15,11,
+        11,15,11,
+        11,15,12,
+        11,15,12,
+        12,10,12,
+        12,11,12,
+        12,12,15,
+        12,14,11,
+        12,14,15,
+        12,15,11,
+        12,15,12
+        12,15,12,
+        13,11,13
+        13,12,10
+        13,12,13,
+        13,13,10,
+        13,13,11,
+        13,15,10,
+        13,15,11,
+        13,15,11,
+        14,10,12,
+        14,11,10,
+        14,11,10,
+        14,13,11
+        14,13,14,
+        15,10,12
+        15,11,10,
+        15,11,11,
+        15,12,11
         ''').split('\n')]
+    print(ub.repr2(ub.find_duplicates(have_ivs), nl=-1))
+    print(len(set(have_ivs)) / 216)
 
-    print(set(optimal_spreads) & (set(have_ivs)))
+    print(set(great_optimal_spreads) & (set(have_ivs)))
+    print(set(optimal_spreads_ultra) & (set(have_ivs)))
+    # wild_lucky_encounter_rank_breakdown(mon)
+    # def wild_lucky_encounter_rank_breakdown(mon):
+    max_cp = 1500
+    tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
+    great_table = table = tables['encounter_51']
 
-    max_cps = [
-        1500,
-        # 2500
-    ]
-    for max_cp in max_cps:
-        print('\n\n!!!-----------')
-        print('max_cp = {!r}'.format(max_cp))
+    if 1:
+        # The DD breakpoint attributes we care about
+        # Seems like only 13, 11, 15, and 13, 10, 15 satisfy this
+        print(table[(table.stamina >= 98) & (table.attack >= 101.5)])
+        print(table[(table.stamina >= 98) & (table.attack >= 101)])
+        print(table[(table.stamina >= 98)])
 
-        tables0 = {
-            'wild_51': mon.league_ranking_table(max_cp, min_iv=0, max_level=51),
-            'encounter_51': mon.league_ranking_table(max_cp, min_iv=10, max_level=51),
-            # 'lucky_51': mon.league_ranking_table(max_cp, min_iv=12, max_level=51),
+    if great_optimal_spreads:
 
-            # 'wild_47': mon.league_ranking_table(max_cp, min_iv=0, max_level=47),
-            # 'encounter_47': mon.league_ranking_table(max_cp, min_iv=10, max_level=47),
-            # 'lucky_47': mon.league_ranking_table(max_cp, min_iv=12, max_level=47),
+        print('have')
+        print(table.loc[table.index.intersection(have_ivs)].to_string())
 
-            # 'wild_50': mon.league_ranking_table(max_cp, min_iv=0, max_level=50),
-            # 'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
-            # 'lucky_50': mon.league_ranking_table(max_cp, min_iv=12, max_level=50),
+        print('interest')
+        print(table.loc[table.index.intersection(great_optimal_spreads)])
 
-            # 'wild_41': mon.league_ranking_table(max_cp, min_iv=0, max_level=41),
-            # 'encounter_41': mon.league_ranking_table(max_cp, min_iv=10, max_level=41),
-            # 'lucky_41': mon.league_ranking_table(max_cp, min_iv=12, max_level=41),
+        print('have-of-interest')
+        print(table.loc[table.index.intersection(great_optimal_spreads).intersection(have_ivs)])
 
-            # 'wild_40': mon.league_ranking_table(max_cp, min_iv=0, max_level=40),
-            # 'encounter_40': mon.league_ranking_table(max_cp, min_iv=10, max_level=40),
-            # 'lucky_40': mon.league_ranking_table(max_cp, min_iv=12, max_level=40),
-        }
+    have = table.loc[set(have_ivs)]
+    efficient_have_ivs = []
+    for ivs, row in have.iterrows():
+        is_worse = row[['attack', 'defense', 'stamina']] < have[['attack', 'defense', 'stamina']]
+        worse_than = is_worse.all(axis=1).sum()
+        if worse_than == 0:
+            efficient_have_ivs.append(ivs)
+    have = table.loc[efficient_have_ivs].sort_values('encounter_51_rank')
+    print(have[(have.stamina >= 98)])
 
-        tables = {}
-        rank_cols = []
-        for key, val in tables0.items():
-            col = key + '_rank'
-            rank_cols.append(col)
-            val.index.name = col
-            val = val.set_index(['iva', 'ivd', 'ivs'])
-            # val.drop
-            val[col] = val['rank']
-            val = val.drop('rank', axis=1)
-            val = val.drop('percent', axis=1)
-            tables[key] = val.copy()
-
-        for key, val in tables.items():
-            col = key + '_rank'
-            for key1, val1 in tables.items():
-                col1 = key1 + '_rank'
-                if key != key1:
-                    common = val1.index.intersection(val.index)
-                    val.loc[common, col1] = val1.loc[common, col1]
-
-        for key, table in tables.items():
-            print('\n--key = {!r}'.format(key))
-            first_part = ub.oset(table.columns) - rank_cols
-            table = table.reindex(list(first_part) + rank_cols, axis=1)
-
-            #
-            if 1:
-                # Add info about
-                raid_level_base = 20
-                # raid_level_boost = 25
-                raid_cps = []
-                for ivs in table.index:
-                    raid_mon = mon.copy(level=raid_level_base, ivs=ivs)
-                    raid_cps.append(raid_mon.cp)
-                table['raid_cp'] = raid_cps
-
-            print(table.to_string(max_rows=50))
-
-            if 1:
-                # The DD breakpoint attributes we care about
-                # Seems like only 13, 11, 15, and 13, 10, 15 satisfy this
-                print(table[(table.stamina >= 98) & (table.attack >= 101.5)])
-                print(table[(table.stamina >= 98) & (table.attack >= 101)])
-                print(table[(table.stamina >= 98)])
-
-            if optimal_spreads:
-                print('interest')
-                print(table.loc[table.index.intersection(optimal_spreads)])
-
-                print('have-of-interest')
-                print(table.loc[table.index.intersection(optimal_spreads).intersection(have_ivs)])
-
-            if have_ivs:
-                print('have')
-                print(table.loc[table.index.intersection(have_ivs)])
-
-
+    if have_ivs:
         table.loc[set(have_ivs)].sort_values('encounter_51_rank')
         x = table.loc[set(have_ivs)].sort_values('encounter_51_rank')
         print(x[(x.stamina >= 98)])
+        print(x[(x.attack >= 102)])
+        print(x[(x.defense >= 224)])
         # import pandas as pd
         # combo = pd.concat(list(tables.values()))
-        # combo = combo.sort_values('stat_product_k')
+    # combo = combo.sort_values('stat_product_k')
+
+    #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
+    max_cp = 2500
+    ultra_tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
+    ultra_table = ultra_tables['encounter_51']
+    print('ultra interest')
+    print(ultra_table.loc[ultra_table.index.intersection(optimal_spreads_ultra)])
+
+    print('great interest')
+    print(great_table.loc[great_table.index.intersection(great_optimal_spreads)])
+
+    # Prob getting it
+    # https://math.stackexchange.com/questions/102673/what-is-the-expected-number-of-trials-until-x-successes
+    p_success = 1 / (6 ** 3)
+    expected_num_trials = 1 / p_success
+    print('expected_num_trials = {!r}'.format(expected_num_trials))
+
+    1 - ((1 - (2 / (6 ** 3))) ** 20)
+
+    import scipy.stats
+    scipy.stats.nbinom.cdf(1, 10, p_success)
+    # scipy.stats.nbinom?
+    # scipy.stats.nbinom.stats(100, p)
+    # z = scipy.stats.binom(20, p)
+    # 1 - z.cdf(1)
+
+
+def wild_lucky_encounter_rank_breakdown(mon, max_cp):
+    print('\n\n!!!-----------')
+    print('max_cp = {!r}'.format(max_cp))
+
+    tables0 = {
+        'wild_51': mon.league_ranking_table(max_cp, min_iv=0, max_level=51),
+        'encounter_51': mon.league_ranking_table(max_cp, min_iv=10, max_level=51),
+        # 'lucky_51': mon.league_ranking_table(max_cp, min_iv=12, max_level=51),
+
+        # 'wild_47': mon.league_ranking_table(max_cp, min_iv=0, max_level=47),
+        # 'encounter_47': mon.league_ranking_table(max_cp, min_iv=10, max_level=47),
+        # 'lucky_47': mon.league_ranking_table(max_cp, min_iv=12, max_level=47),
+
+        # 'wild_50': mon.league_ranking_table(max_cp, min_iv=0, max_level=50),
+        # 'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
+        # 'lucky_50': mon.league_ranking_table(max_cp, min_iv=12, max_level=50),
+
+        # 'wild_41': mon.league_ranking_table(max_cp, min_iv=0, max_level=41),
+        # 'encounter_41': mon.league_ranking_table(max_cp, min_iv=10, max_level=41),
+        # 'lucky_41': mon.league_ranking_table(max_cp, min_iv=12, max_level=41),
+
+        # 'wild_40': mon.league_ranking_table(max_cp, min_iv=0, max_level=40),
+        # 'encounter_40': mon.league_ranking_table(max_cp, min_iv=10, max_level=40),
+        # 'lucky_40': mon.league_ranking_table(max_cp, min_iv=12, max_level=40),
+    }
+
+    tables = {}
+    rank_cols = []
+    for key, val in tables0.items():
+        col = key + '_rank'
+        rank_cols.append(col)
+        val.index.name = col
+        val = val.set_index(['iva', 'ivd', 'ivs'])
+        # val.drop
+        val[col] = val['rank']
+        val = val.drop('rank', axis=1)
+        val = val.drop('percent', axis=1)
+        tables[key] = val.copy()
+
+    for key, val in tables.items():
+        col = key + '_rank'
+        for key1, val1 in tables.items():
+            col1 = key1 + '_rank'
+            if key != key1:
+                common = val1.index.intersection(val.index)
+                val.loc[common, col1] = val1.loc[common, col1]
+
+    for key, table in tables.items():
+        print('\n--key = {!r}'.format(key))
+        first_part = ub.oset(table.columns) - rank_cols
+        table = table.reindex(list(first_part) + rank_cols, axis=1)
+
+        #
+        if 1:
+            # Add info about
+            raid_level_base = 20
+            # raid_level_boost = 25
+            raid_cps = []
+            for ivs in table.index:
+                raid_mon = mon.copy(level=raid_level_base, ivs=ivs)
+                raid_cps.append(raid_mon.cp)
+            table['raid_cp'] = raid_cps
+
+        tables[key] = table
+        print(table.to_string(max_rows=50))
+
+    return tables
 
 
 def compute_breakpoints(mon1, mon2, move):
