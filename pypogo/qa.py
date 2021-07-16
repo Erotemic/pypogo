@@ -727,234 +727,6 @@ def lapras():
     # z = mon.league_ranking_table(max_cp=2500, min_iv=10)
 
 
-def deoxys():
-    import pypogo
-    # mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
-    mon = pypogo.Pokemon.random('deoxys', form='defense')
-
-    # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
-
-    #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
-    great_optimal_spreads = [
-        tuple([int(x) for x in p.strip().split('/') if x])
-        for p in ub.codeblock(
-            '''
-            10/15/13
-            10/10/15
-            11/10/13
-            12/15/15
-            11/13/12
-            13/15/13
-            13/11/15
-            12/13/10
-            11/15/11
-            11/15/10
-            14/12/13
-            15/14/10
-            15/10/12
-            ''').split('\n')]
-
-    optimal_spreads_ultra = [
-        tuple([int(x) for x in p.strip().split('/') if x])
-        for p in ub.codeblock(
-            '''
-            15/11/12
-            15/11/10
-            15/13/11
-            15/10/12
-            15/15/10
-            15/10/10
-            15/12/11
-            15/12/15
-            14/10/14
-            15/11/15
-            15/10/15
-            ''').split('\n')]
-
-    have_ivs = [tuple([int(x) for x in p.strip().split(',') if x])
-                for p in ub.codeblock(
-        '''
-        15,11,14
-        14,12,10
-        11,14,12
-        14,11,10,
-        12,11,13,
-        10,12,14,
-        11,12,13,
-        13,12,12
-        11,13,11
-        10,15,15,
-        14,11,10,
-        14,14,11,
-        13,10,12
-        12,10,15
-        10,13,15,
-        10,13,11,
-        12,11,11,
-        12,10,10
-        12,10,14,
-        10,11,13
-        12,10,12,
-        12,14,10,
-        15,14,11,
-        10,14,15
-        14,10,13,
-        11,14,12,
-        14,12,15,
-        11,12,11
-        13,14,13
-        13,10,11,
-        10,12,12,
-        15,12,12
-        14,10,10,
-        11,10,15,
-        15,12,10,
-        15,14,11,
-        14,15,10,
-        15,14,13,
-        15,12,10,
-        15,13,13,
-        13,14,15,
-        11,13,13,
-        13,10,12,
-        14,13,12,
-        14,10,13,
-        10,10,14,
-        15,15,13,
-        10,12,14,
-        14,11,14,
-        12,15,11,
-        14,14,13,
-        13,12,15
-        13,11,13
-        12,15,10
-        15,15,12
-        15,12,14
-        10,13,15,
-        11,14,12
-        10,13,13,
-        11,11,12,
-        10,11,11
-        15,12,14,
-        13,12,11,
-        13,12,15,
-        10,12,13
-        10,10,12
-        11,15,11
-        10,10,12,
-        10,12,14,
-        10,12,14,
-        10,13,10,
-        10,13,12,
-        10,14,14,
-        11,12,14,
-        11,14,12,
-        11,14,15,
-        11,15,11,
-        11,15,11,
-        11,15,12,
-        11,15,12,
-        12,10,12,
-        12,11,12,
-        12,12,15,
-        12,14,11,
-        12,14,15,
-        12,15,11,
-        12,15,12
-        12,15,12,
-        13,11,13
-        13,12,10
-        13,12,13,
-        13,13,10,
-        13,13,11,
-        13,15,10,
-        13,15,11,
-        13,15,11,
-        14,10,12,
-        14,11,10,
-        14,11,10,
-        14,13,11
-        14,13,14,
-        15,10,12
-        15,11,10,
-        15,11,11,
-        15,12,11
-        ''').split('\n')]
-    print(ub.repr2(ub.find_duplicates(have_ivs), nl=-1))
-    print(len(set(have_ivs)) / 216)
-
-    print(set(great_optimal_spreads) & (set(have_ivs)))
-    print(set(optimal_spreads_ultra) & (set(have_ivs)))
-    # wild_lucky_encounter_rank_breakdown(mon)
-    # def wild_lucky_encounter_rank_breakdown(mon):
-    max_cp = 1500
-    tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
-    great_table = table = tables['encounter_51']
-
-    if 1:
-        # The DD breakpoint attributes we care about
-        # Seems like only 13, 11, 15, and 13, 10, 15 satisfy this
-        print(table[(table.stamina >= 98) & (table.attack >= 101.5)])
-        print(table[(table.stamina >= 98) & (table.attack >= 101)])
-        print(table[(table.stamina >= 98)])
-
-    if great_optimal_spreads:
-
-        print('have')
-        print(table.loc[table.index.intersection(have_ivs)].to_string())
-
-        print('interest')
-        print(table.loc[table.index.intersection(great_optimal_spreads)])
-
-        print('have-of-interest')
-        print(table.loc[table.index.intersection(great_optimal_spreads).intersection(have_ivs)])
-
-    have = table.loc[set(have_ivs)]
-    efficient_have_ivs = []
-    for ivs, row in have.iterrows():
-        is_worse = row[['attack', 'defense', 'stamina']] < have[['attack', 'defense', 'stamina']]
-        worse_than = is_worse.all(axis=1).sum()
-        if worse_than == 0:
-            efficient_have_ivs.append(ivs)
-    have = table.loc[efficient_have_ivs].sort_values('encounter_51_rank')
-    print(have[(have.stamina >= 98)])
-
-    if have_ivs:
-        table.loc[set(have_ivs)].sort_values('encounter_51_rank')
-        x = table.loc[set(have_ivs)].sort_values('encounter_51_rank')
-        print(x[(x.stamina >= 98)])
-        print(x[(x.attack >= 102)])
-        print(x[(x.defense >= 224)])
-        # import pandas as pd
-        # combo = pd.concat(list(tables.values()))
-    # combo = combo.sort_values('stat_product_k')
-
-    #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
-    max_cp = 2500
-    ultra_tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
-    ultra_table = ultra_tables['encounter_51']
-    print('ultra interest')
-    print(ultra_table.loc[ultra_table.index.intersection(optimal_spreads_ultra)])
-
-    print('great interest')
-    print(great_table.loc[great_table.index.intersection(great_optimal_spreads)])
-
-    # Prob getting it
-    # https://math.stackexchange.com/questions/102673/what-is-the-expected-number-of-trials-until-x-successes
-    p_success = 1 / (6 ** 3)
-    expected_num_trials = 1 / p_success
-    print('expected_num_trials = {!r}'.format(expected_num_trials))
-
-    1 - ((1 - (2 / (6 ** 3))) ** 20)
-
-    import scipy.stats
-    scipy.stats.nbinom.cdf(1, 10, p_success)
-    # scipy.stats.nbinom?
-    # scipy.stats.nbinom.stats(100, p)
-    # z = scipy.stats.binom(20, p)
-    # 1 - z.cdf(1)
-
-
 def wild_lucky_encounter_rank_breakdown(mon, max_cp):
     print('\n\n!!!-----------')
     print('max_cp = {!r}'.format(max_cp))
@@ -1152,3 +924,387 @@ def attack_breakpoint_grid(mon1, mon2, move):
     df >= max_damage
 
     # TODO: write code such that the takeaways are more interpretable here
+
+
+def deoxys():
+    import pypogo
+    # mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
+    mon = pypogo.Pokemon.random('deoxys', form='defense')
+
+    # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
+
+    #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
+    great_optimal_spreads = [
+        tuple([int(x) for x in p.strip().split(',') if x])
+        for p in ub.codeblock(
+            '''
+            10,15,13
+            10,10,15
+            11,10,13
+            12,15,15
+            11,13,12
+            13,15,13
+            13,11,15
+            12,13,10
+            11,15,11
+            11,15,10
+            14,12,13
+            15,14,10
+            15,10,12
+            ''').split('\n')]
+
+    optimal_spreads_ultra = [
+        tuple([int(x) for x in p.strip().split(',') if x])
+        for p in ub.codeblock(
+            '''
+            15,11,12
+            15,11,10
+            15,13,11
+            15,10,12
+            15,15,10
+            15,10,10
+            15,12,11
+            15,12,15
+            14,10,14
+            15,11,15
+            15,10,15
+            ''').split('\n')]
+
+    have_ivs = [tuple([int(x) for x in p.strip().split(',') if x]) for p in ub.codeblock(
+        '''
+        12,10,14
+        12,15,13,
+        10,11,13
+        11,13,14,
+        12,12,12,
+        11,12,14,
+        13,14,12,
+        11,10,12
+        11,15,10,
+        13,12,15,
+        13,14,13,
+        13,10,14
+        10,14,15
+        13,10,10,
+        11,11,13,
+        15,15,13,
+        13,11,12
+        15,13,15
+        11,14,13,
+        10,11,12,
+        10,13,15,
+        12,11,11,
+        11,10,14
+        14,10,14
+        13,15,15,
+        13,11,14
+        15,12,12
+        11,10,10
+        14,10,15,
+        10,13,11
+        10,10,12,
+        10,13,12,
+        15,14,13
+        15,13,10,
+        12,14,14,
+        11,12,11
+        15,12,11
+        11,12,10,
+        15,12,10,
+        12,10,12,
+        11,10,11,
+        15,15,12,
+        13,12,12,
+        11,12,12
+        15,12,13,
+        10,15,15
+        11,13,12,
+        10,10,13,
+        10,11,13,
+        14,15,15,
+        14,11,11
+        13,11,12
+        11,10,12
+        13,13,14
+        15,11,14
+        14,12,10
+        11,14,12
+        14,11,10,
+        12,11,13,
+        10,12,14,
+        11,12,13,
+        13,12,12
+        11,13,11
+        10,15,15,
+        14,11,10,
+        14,14,11,
+        13,10,12
+        12,10,15
+        10,13,15,
+        10,13,11,
+        12,11,11,
+        12,10,10
+        12,10,14,
+        10,11,13
+        12,10,12,
+        12,14,10,
+        15,14,11,
+        10,14,15
+        14,10,13,
+        11,14,12,
+        14,12,15,
+        11,12,11
+        13,14,13
+        13,10,11,
+        10,12,12,
+        15,12,12
+        14,10,10,
+        11,10,15,
+        15,12,10,
+        15,14,11,
+        14,15,10,
+        15,14,13,
+        15,12,10,
+        15,13,13,
+        13,14,15,
+        11,13,13,
+        13,10,12,
+        14,13,12,
+        14,10,13,
+        10,10,14,
+        15,15,13,
+        10,12,14,
+        14,11,14,
+        12,15,11,
+        14,14,13,
+        13,12,15
+        13,11,13
+        12,15,10
+        15,15,12
+        15,12,14
+        10,13,15,
+        11,14,12
+        10,13,13,
+        11,11,12,
+        10,11,11
+        15,12,14,
+        13,12,11,
+        13,12,15,
+        10,12,13
+        10,10,12
+        11,15,11
+        10,10,12,
+        10,12,14,
+        10,12,14,
+        10,13,10,
+        10,13,12,
+        10,14,14,
+        11,12,14,
+        11,14,12,
+        11,14,15,
+        11,15,11,
+        11,15,11,
+        11,15,12,
+        11,15,12,
+        12,10,12,
+        12,11,12,
+        12,12,15,
+        12,14,11,
+        12,14,15,
+        12,15,11,
+        12,15,12
+        12,15,12,
+        13,11,13
+        13,12,10
+        13,12,13,
+        13,13,10,
+        13,13,11,
+        13,15,10,
+        13,15,11,
+        13,15,11,
+        14,10,12,
+        14,11,10,
+        14,11,10,
+        14,13,11
+        14,13,14,
+        15,10,12
+        15,11,10,
+        15,11,11,
+        15,12,11
+        ''').split('\n')]
+    print(ub.repr2(ub.find_duplicates(have_ivs), nl=-1))
+    print(len(set(have_ivs)) / 216)
+
+    print(set(great_optimal_spreads) & (set(have_ivs)))
+    print(set(optimal_spreads_ultra) & (set(have_ivs)))
+    # wild_lucky_encounter_rank_breakdown(mon)
+    # def wild_lucky_encounter_rank_breakdown(mon):
+    max_cp = 1500
+    tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
+    great_table = table = tables['encounter_51']
+    ultra_tables = wild_lucky_encounter_rank_breakdown(mon, 2500)
+    ultra_table = ultra_tables['encounter_51']
+
+    if 1:
+        # The DD breakpoint attributes we care about
+        # Seems like only 13, 11, 15, and 13, 10, 15 satisfy this
+        print(table[(table.stamina >= 98) & (table.attack >= 101.5)])
+        print(table[(table.stamina >= 98) & (table.attack >= 101)])
+        print(table[(table.stamina >= 98)])
+
+    if great_optimal_spreads:
+
+        print('have')
+        print(table.loc[table.index.intersection(have_ivs)].to_string())
+
+        print(table.loc[table.index.intersection(have_ivs)].iloc[0:9].to_string())
+
+        print('interest')
+        print(table.loc[table.index.intersection(great_optimal_spreads)])
+
+        print('have-great-of-interest')
+        print(table.loc[table.index.intersection(great_optimal_spreads).intersection(have_ivs)])
+
+        print('have-ultra-of-interest')
+        print(ultra_table.loc[ultra_table.index.intersection(optimal_spreads_ultra).intersection(have_ivs)])
+
+
+    have = table.loc[set(have_ivs)]
+    efficient_have_ivs = []
+    for ivs, row in have.iterrows():
+        is_worse = row[['attack', 'defense', 'stamina']] < have[['attack', 'defense', 'stamina']]
+        worse_than = is_worse.all(axis=1).sum()
+        if worse_than == 0:
+            efficient_have_ivs.append(ivs)
+    have = table.loc[efficient_have_ivs].sort_values('encounter_51_rank')
+    print(have[(have.stamina >= 98)])
+
+    if have_ivs:
+        table.loc[set(have_ivs)].sort_values('encounter_51_rank')
+        x = table.loc[set(have_ivs)].sort_values('encounter_51_rank')
+        print(x[(x.stamina >= 98)])
+        print(x[(x.attack >= 102)])
+        print(x[(x.defense >= 224)])
+        # import pandas as pd
+        # combo = pd.concat(list(tables.values()))
+    # combo = combo.sort_values('stat_product_k')
+
+    # https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
+    max_cp = 2500
+    ultra_tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
+    ultra_table = ultra_tables['encounter_51']
+    print('ultra interest')
+    print(ultra_table.loc[ultra_table.index.intersection(optimal_spreads_ultra)])
+
+    print('great interest')
+    print(great_table.loc[great_table.index.intersection(great_optimal_spreads)])
+
+    if 1:
+        from pypogo.pvpoke_experiment import run_pvpoke_simulation
+        # Test in PVP Poke
+        top = table.loc[table.index.intersection(have_ivs)].iloc[0:2]
+        interest = table.loc[table.index.intersection(great_optimal_spreads).intersection(have_ivs)]
+        cands = ub.oset(top.index.values.tolist()) | ub.oset(interest.index.values.tolist())
+        mons = [
+            # pypogo.Pokemon('Deoxys', form='defense', ivs=ivs, moves=['Counter', 'Rock Slide', 'Psycho Boost']).maximize(1500)
+            pypogo.Pokemon('Deoxys', form='defense', ivs=ivs, moves=['Counter', 'Thunderbolt', 'Psycho Boost']).maximize(1500)
+            for ivs in cands
+        ]
+        results = run_pvpoke_simulation(mons)
+
+        rows = []
+        for (nas, nds), data in results.items():
+            print('nas, nds = {}, {}'.format(nas, nds))
+            print(data.sum(axis=1))
+
+            for name, row_ in data.iterrows():
+                row = {}
+                row['name'] = name
+                row['score'] = row_.sum()
+
+                x = (row_ > 500)
+                win_vs = x[x].index
+
+                row['wins'] = (row_ > 500).sum()
+                row['losses'] = (row_ < 500).sum()
+                row['ties'] = (row_ == 500).sum()
+                row['win_vs'] = set(win_vs.tolist())
+
+                row['nas'] = nas
+                row['nds'] = nds
+                rows.append(row)
+
+        # TODO: write the proper analysis for dropped matchups
+
+        df2 = pd.DataFrame(rows)
+        summary = {}
+        rows2 = []
+        for name, subdf in df2.groupby('name'):
+            row3 = {'name': name}
+            for _, row2_ in subdf.iterrows():
+                winkey = 'wins-{}-{}'.format(row2_['nas'], row2_['nds'])
+                row3[winkey] = row2_['wins']
+                winvskey = 'wins-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+                row3[winvskey] = row2_['win_vs']
+            row3['score'] = subdf['score'].sum()
+            row3['total_wins'] = subdf['wins'].sum()
+            row3['total_ties'] = subdf['ties'].sum()
+            rows2.append(row3)
+        df3 = pd.DataFrame(rows2).set_index('name')
+        print(df3)
+
+        summary = {}
+        rows2 = []
+        for name, subdf in df2.groupby('name'):
+            row3 = {'name': name}
+            drops = {}
+            for _, row2_ in subdf.iterrows():
+                winkey = 'wins-{}-{}'.format(row2_['nas'], row2_['nds'])
+                row3[winkey] = row2_['wins']
+                winvskey = 'wins-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+                dropvskey = 'drop-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+                all_wins_vs = set.union(*df3[winvskey])
+                drops[dropvskey] = all_wins_vs - row2_['win_vs']
+
+            row3['drops'] = set.union(*drops.values())
+            row3['score'] = subdf['score'].sum()
+            row3['total_wins'] = subdf['wins'].sum()
+            row3['total_ties'] = subdf['ties'].sum()
+            rows2.append(row3)
+        df4 = pd.DataFrame(rows2).set_index('name')
+        print(df4.sort_values('total_wins'))
+        print(ub.repr2(df4.drops.to_dict()))
+
+
+        df['drops-vs-0-0'] = df['wins-vs-0-0'].apply(lambda x: all_wins_vs - x)
+
+    # Prob getting it
+    # https://math.stackexchange.com/questions/102673/what-is-the-expected-number-of-trials-until-x-successes
+    p_success = 1 / (6 ** 3)
+    expected_num_trials = 1 / p_success
+    print('expected_num_trials = {!r}'.format(expected_num_trials))
+
+    1 - ((1 - (2 / (6 ** 3))) ** 20)
+    table[table.raid_cp == 1275]
+    table[table.raid_cp == 1274]
+    table[table.raid_cp == 1245]
+
+    targets = table.loc[great_optimal_spreads + optimal_spreads_ultra]
+    optimal_raid_cps = targets.sort_values('raid_cp').raid_cp
+    print('optimal_raid_cps = {!r}'.format(optimal_raid_cps))
+    flags = (table.raid_cp.values[:, None] == optimal_raid_cps.values[None, :]).sum(axis=1).ravel() > 0
+    candidates = table.iloc[flags]
+
+    to_check_mons = [
+        pypogo.Pokemon('Deoxys', form='defense', ivs=ivs, moves=['Counter', 'Rock Slide', 'Psycho Boost']).maximize(1500)
+        for ivs in have_ivs
+    ]
+
+
+
+    import scipy.stats
+    scipy.stats.nbinom.cdf(1, 10, p_success)
+    # scipy.stats.nbinom?
+    # scipy.stats.nbinom.stats(100, p)
+    # z = scipy.stats.binom(20, p)
+    # 1 - z.cdf(1)
