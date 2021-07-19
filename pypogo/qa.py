@@ -741,7 +741,7 @@ def wild_lucky_encounter_rank_breakdown(mon, max_cp):
         # 'lucky_47': mon.league_ranking_table(max_cp, min_iv=12, max_level=47),
 
         # 'wild_50': mon.league_ranking_table(max_cp, min_iv=0, max_level=50),
-        # 'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
+        'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
         # 'lucky_50': mon.league_ranking_table(max_cp, min_iv=12, max_level=50),
 
         # 'wild_41': mon.league_ranking_table(max_cp, min_iv=0, max_level=41),
@@ -1132,6 +1132,40 @@ def deoxys():
         15,11,11,
         15,12,11
         ''').split('\n')]
+
+    deleted = [
+        (10, 10, 10),
+        (10, 10, 11),
+        (10, 10, 12),
+        (10, 11, 10),
+        (10, 11, 11),
+        (10, 11, 12),
+        (10, 12, 10),
+        (10, 12, 11),
+        (10, 13, 10),
+        (10, 13, 11),
+        (10, 14, 10),
+        (10, 14, 15),
+        (10, 15, 10),
+        (11, 10, 10),
+        (11, 11, 10),
+        (11, 12, 14),
+        (11, 14, 15),
+        (12, 10, 13),
+        (12, 12, 12),
+        (12, 14, 13),
+        (13, 10, 11),
+        (13, 12, 12),
+        (13, 13, 15),
+        (13, 14, 11),
+        (14, 10, 11)
+        (14, 11, 14),
+        (14, 12, 10),
+        (14, 13, 15),
+        (14, 15, 14),
+        (15, 11, 14),
+        (15, 13, 13),
+    ]
     print(ub.repr2(ub.find_duplicates(have_ivs), nl=-1))
     print(len(set(have_ivs)) / 216)
 
@@ -1143,7 +1177,7 @@ def deoxys():
     tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
     great_table = table = tables['encounter_51']
     ultra_tables = wild_lucky_encounter_rank_breakdown(mon, 2500)
-    ultra_table = ultra_tables['encounter_51']
+    ultra_table = ultra_tables['encounter_50']
 
     if 1:
         # The DD breakpoint attributes we care about
@@ -1157,7 +1191,8 @@ def deoxys():
         print('have')
         print(table.loc[table.index.intersection(have_ivs)].to_string())
 
-        print(table.loc[table.index.intersection(have_ivs)].iloc[0:9].to_string())
+        print(ultra_table.loc[ultra_table.index.intersection(have_ivs)].iloc[0:9].sort_values('raid_cp').to_string())
+        print(great_table.loc[great_table.index.intersection(have_ivs)].iloc[0:9].sort_values('raid_cp').to_string())
 
         print('interest')
         print(table.loc[table.index.intersection(great_optimal_spreads)])
@@ -1198,6 +1233,19 @@ def deoxys():
 
     print('great interest')
     print(great_table.loc[great_table.index.intersection(great_optimal_spreads)])
+
+    bad_candidates = set(set(have_ivs) - set(great_optimal_spreads)) - set(optimal_spreads_ultra)
+
+
+    badx = great_table.loc[bad_candidates].sort_values('encounter_51_rank').iloc[50:]
+    bady = ultra_table.loc[bad_candidates].sort_values('encounter_51_rank').iloc[50:]
+
+    badx = ultra_table[ultra_table.cp < 2488]
+    bady = great_table[great_table.cp < 1488]
+    junkos = badx.index & bady.index
+
+    great_table.loc[junkos]
+    ultra_table.loc[junkos]
 
     if 1:
         from pypogo.pvpoke_experiment import run_pvpoke_simulation
@@ -1308,3 +1356,123 @@ def deoxys():
     # scipy.stats.nbinom.stats(100, p)
     # z = scipy.stats.binom(20, p)
     # 1 - z.cdf(1)
+
+
+def master_check():
+    import pypogo
+    from pypogo.pvpoke_experiment import run_pvpoke_simulation
+    # Test in PVP Poke
+    mons = [
+        pypogo.Pokemon('Ho-Oh', ivs=[15, 15, 15], level=40, moves=['Incinerate', 'Brave Bird', 'Earthquake']),
+
+        pypogo.Pokemon('Lugia', ivs=[15, 12, 10], level=40),
+        pypogo.Pokemon('Lugia', ivs=[15, 15, 15], level=40),
+
+        pypogo.Pokemon('Dialga', ivs=[15, 15, 15], level=40),
+        pypogo.Pokemon('Dialga', ivs=[15, 12, 14], level=40),
+        pypogo.Pokemon('Dialga', ivs=[15, 11, 15], level=40),
+
+        pypogo.Pokemon('Yveltal', ivs=[15, 15, 15], level=40),
+        pypogo.Pokemon('Yveltal', ivs=[15, 15, 12], level=40),
+    ]
+    results = run_pvpoke_simulation(mons, league='master-classic')
+
+    fixed_results = {}
+    for shield_sit, data in results.items():
+        data.index
+        data['name'] = [mon.name for mon in mons]
+        data['ivs'] = [tuple(mon.ivs) for mon in mons]
+        fixed_data = data.set_index(['name', 'ivs'])
+        fixed_results[shield_sit] = fixed_data
+
+    name_comparison = {}
+    for shield_sit, data in fixed_results.items():
+        for name, group in data.groupby('name'):
+            name_comparison.setdefault(name, {})
+            name_comparison[name][shield_sit] = group
+
+    shield_group = name_comparison['dialga']
+    for name, shield_group in name_comparison.items():
+        to_join = []
+        for ss, sub in shield_group.items():
+            nas, nds = ss
+            new_cols = pd.MultiIndex.from_arrays([
+                sub.columns,
+                pd.Index([nas] * sub.shape[1], name='nas'),
+                pd.Index([nds] * sub.shape[1], name='nds'),
+            ])
+            sub2 = sub.copy()
+            sub2.columns = new_cols
+            to_join.append(sub2)
+
+        # Combined dataframe of all sheild situations
+        all_sits = pd.concat(to_join, axis=1)
+        all_sits = all_sits.sort_index(axis=1)
+    print(all_sits.sort_index(axis=1))
+
+
+    rows = []
+    for (nas, nds), data in results.items():
+        print('nas, nds = {}, {}'.format(nas, nds))
+        print(data.sum(axis=1))
+
+        for name, row_ in data.iterrows():
+            row = {}
+            row['name'] = name
+            row['score'] = row_.sum()
+
+            x = (row_ > 500)
+            win_vs = x[x].index
+
+            row['wins'] = (row_ > 500).sum()
+            row['losses'] = (row_ < 500).sum()
+            row['ties'] = (row_ == 500).sum()
+            row['win_vs'] = set(win_vs.tolist())
+
+            row['nas'] = nas
+            row['nds'] = nds
+            rows.append(row)
+
+    # TODO: write the proper analysis for dropped matchups
+
+    df2 = pd.DataFrame(rows)
+    summary = {}
+    rows2 = []
+    for name, subdf in df2.groupby('name'):
+        row3 = {'name': name}
+        for _, row2_ in subdf.iterrows():
+            winkey = 'wins-{}-{}'.format(row2_['nas'], row2_['nds'])
+            row3[winkey] = row2_['wins']
+            winvskey = 'wins-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+            row3[winvskey] = row2_['win_vs']
+        row3['score'] = subdf['score'].sum()
+        row3['total_wins'] = subdf['wins'].sum()
+        row3['total_ties'] = subdf['ties'].sum()
+        rows2.append(row3)
+    df3 = pd.DataFrame(rows2).set_index('name')
+    print(df3)
+
+    summary = {}
+    rows2 = []
+    for name, subdf in df2.groupby('name'):
+        row3 = {'name': name}
+        drops = {}
+        for _, row2_ in subdf.iterrows():
+            winkey = 'wins-{}-{}'.format(row2_['nas'], row2_['nds'])
+            row3[winkey] = row2_['wins']
+            winvskey = 'wins-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+            dropvskey = 'drop-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+            all_wins_vs = set.union(*df3[winvskey])
+            drops[dropvskey] = all_wins_vs - row2_['win_vs']
+
+        row3['drops'] = set.union(*drops.values())
+        row3['score'] = subdf['score'].sum()
+        row3['total_wins'] = subdf['wins'].sum()
+        row3['total_ties'] = subdf['ties'].sum()
+        rows2.append(row3)
+    df4 = pd.DataFrame(rows2).set_index('name')
+    print(df4.sort_values('total_wins'))
+    print(ub.repr2(df4.drops.to_dict()))
+
+
+    df['drops-vs-0-0'] = df['wins-vs-0-0'].apply(lambda x: all_wins_vs - x)

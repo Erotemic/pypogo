@@ -72,8 +72,8 @@ def run_pvpoke_simulation(mons, league='great'):
     import pypogo
 
     to_check_mons = mons
-    for mon in to_check_mons:
-        mon.populate_all()
+    # for mon in to_check_mons:
+    #     mon.populate_all()
 
     # Requires the driver be in the PATH
     ensure_selenium_chromedriver()
@@ -81,7 +81,7 @@ def run_pvpoke_simulation(mons, league='great'):
     url = 'https://pvpoke.com/battle/matrix/'
     driver = webdriver.Chrome()
     driver.get(url)
-    time.sleep(4.0)
+    time.sleep(2.0)
 
     if league == 'great':
         league_box_target = 'Great League (CP 1500)'
@@ -158,10 +158,9 @@ def run_pvpoke_simulation(mons, league='great'):
         iv_s.clear()
         iv_s.send_keys(str(mon.ivs[2]))
 
-        USE_MOVES = 1
-
-        if USE_MOVES:
-            mon.populate_all()
+        # USE_MOVES = 1
+        if mon.moves is not None:
+            # mon.populate_all()
 
             fast_select = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[10]/select[1]')
             fast_select.click()
@@ -438,10 +437,9 @@ def run_pvpoke_ultra_experiment():
         iv_s.clear()
         iv_s.send_keys(str(mon.ivs[2]))
 
-        USE_MOVES = 1
-
-        if USE_MOVES:
-            mon.populate_all()
+        # USE_MOVES = 1
+        if mon.moves is not None:
+            # mon.populate_all()
 
             fast_select = driver.find_element_by_xpath('/html/body/div[5]/div/div[3]/div[1]/div[2]/div[10]/select[1]')
             fast_select.click()
