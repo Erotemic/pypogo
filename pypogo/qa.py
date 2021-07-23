@@ -727,31 +727,53 @@ def lapras():
     # z = mon.league_ranking_table(max_cp=2500, min_iv=10)
 
 
-def wild_lucky_encounter_rank_breakdown(mon, max_cp):
+def wild_lucky_encounter_rank_breakdown(mon, max_cp, max_levels=[51, 50, 40],
+                                        methods=['wild', 'encounter', 'lucky'],
+                                        legacymode=True):
+    """
+    max_levels=[51, 50, 40]
+    methods=['wild', 'encounter', 'lucky']
+    """
     print('\n\n!!!-----------')
     print('max_cp = {!r}'.format(max_cp))
 
-    tables0 = {
-        'wild_51': mon.league_ranking_table(max_cp, min_iv=0, max_level=51),
-        'encounter_51': mon.league_ranking_table(max_cp, min_iv=10, max_level=51),
-        # 'lucky_51': mon.league_ranking_table(max_cp, min_iv=12, max_level=51),
+    tables0 = {}
 
-        # 'wild_47': mon.league_ranking_table(max_cp, min_iv=0, max_level=47),
-        # 'encounter_47': mon.league_ranking_table(max_cp, min_iv=10, max_level=47),
-        # 'lucky_47': mon.league_ranking_table(max_cp, min_iv=12, max_level=47),
-
-        # 'wild_50': mon.league_ranking_table(max_cp, min_iv=0, max_level=50),
-        'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
-        # 'lucky_50': mon.league_ranking_table(max_cp, min_iv=12, max_level=50),
-
-        # 'wild_41': mon.league_ranking_table(max_cp, min_iv=0, max_level=41),
-        # 'encounter_41': mon.league_ranking_table(max_cp, min_iv=10, max_level=41),
-        # 'lucky_41': mon.league_ranking_table(max_cp, min_iv=12, max_level=41),
-
-        # 'wild_40': mon.league_ranking_table(max_cp, min_iv=0, max_level=40),
-        # 'encounter_40': mon.league_ranking_table(max_cp, min_iv=10, max_level=40),
-        # 'lucky_40': mon.league_ranking_table(max_cp, min_iv=12, max_level=40),
+    method_to_miniv = {
+        'wild': 0,
+        'lucky': 12,
+        'encounter': 10,
+        'trade': 1,
     }
+
+    for level in max_levels:
+        for method in methods:
+            min_iv = method_to_miniv[method]
+            key = f'{method}_{level}'
+            val = mon.league_ranking_table(max_cp, min_iv=min_iv, max_level=level)
+            tables0[key] = val
+
+    # tables0 = {
+    #     'wild_51': mon.league_ranking_table(max_cp, min_iv=0, max_level=51),
+    #     'encounter_51': mon.league_ranking_table(max_cp, min_iv=10, max_level=51),
+    #     # 'lucky_51': mon.league_ranking_table(max_cp, min_iv=12, max_level=51),
+
+    #     # 'wild_47': mon.league_ranking_table(max_cp, min_iv=0, max_level=47),
+    #     # 'encounter_47': mon.league_ranking_table(max_cp, min_iv=10, max_level=47),
+    #     # 'lucky_47': mon.league_ranking_table(max_cp, min_iv=12, max_level=47),
+
+    #     # 'wild_50': mon.league_ranking_table(max_cp, min_iv=0, max_level=50),
+    #     'encounter_50': mon.league_ranking_table(max_cp, min_iv=10, max_level=50),
+    #     # 'lucky_50': mon.league_ranking_table(max_cp, min_iv=12, max_level=50),
+
+    #     # 'wild_41': mon.league_ranking_table(max_cp, min_iv=0, max_level=41),
+    #     # 'encounter_41': mon.league_ranking_table(max_cp, min_iv=10, max_level=41),
+    #     # 'lucky_41': mon.league_ranking_table(max_cp, min_iv=12, max_level=41),
+
+    #     # 'wild_40': mon.league_ranking_table(max_cp, min_iv=0, max_level=40),
+    #     # 'encounter_40': mon.league_ranking_table(max_cp, min_iv=10, max_level=40),
+    #     # 'lucky_40': mon.league_ranking_table(max_cp, min_iv=12, max_level=40),
+    # }
 
     tables = {}
     rank_cols = []
@@ -1408,6 +1430,10 @@ def master_check():
         # Combined dataframe of all sheild situations
         all_sits = pd.concat(to_join, axis=1)
         all_sits = all_sits.sort_index(axis=1)
+
+
+        all_sits
+
     print(all_sits.sort_index(axis=1))
 
 
@@ -1476,3 +1502,13 @@ def master_check():
 
 
     df['drops-vs-0-0'] = df['wins-vs-0-0'].apply(lambda x: all_wins_vs - x)
+
+
+def dialga_raids():
+    mon = Pokemon.random('dialga', ivs=[15, 15, 15], level=40, moves=['Dragon Breath', 'Iron Head'])
+    results = wild_lucky_encounter_rank_breakdown(mon, float('inf'), methods=['encounter'], max_levels=[41, 51])
+
+    table = results['encounter_50']
+    flags = [all([iva >= 15, ivd >= 14, ivs >= 12]) for iva, ivd, ivs in table.index]
+    valid = table[flags]
+    print(valid)
