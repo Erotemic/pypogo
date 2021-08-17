@@ -496,12 +496,41 @@ def move_chart():
 
     import pandas as pd
     df = pd.DataFrame(longform)
+    df['dpe' ] = (df['power'] / -df['energy_delta']).round(1)
+    df = df.sort_values('dpe')
 
-    # sns.scatterplot(data=df, x='energy_delta', y='power', color='type', label='name')
-    sns.scatterplot(data=df,
-                    x='energy_delta',
-                    y='power',
-                    label='name')
+    rows = []
+    for ke, part in df.groupby(['power', 'energy_delta']):
+        if len(part) > 1:
+            print(', '.join([f'{n:>30}' for n in part['name']]))
+        row = {
+            'power': ke[0],
+            'dpe': part['dpe'].iloc[0],
+            'energy_delta': ke[1],
+            'names': ',\n'.join(part['name'].iloc[0:1])
+        }
+        rows.append(row)
+    df2 = pd.DataFrame(rows)
+    pt = df2.pivot('power', 'energy_delta', 'names')
+    print(pt.to_string())
+    pt = df2.pivot('dpe', 'energy_delta', 'names')
+    print('\n')
+    print(pt.to_string())
+
+
+
+    longform = []
+    for move in api.pvp_fast_moves.values():
+        assert len(move) == 1
+        move = move[0]
+        if move.get('buffs', None):
+            move['hasbuff'] = True
+            move.get('buffs')['activation_chance']
+            move.pop('buffs', None)
+        longform.append(move)
+
+    import pandas as pd
+    df = pd.DataFrame(longform)
 
     df['dps'] = df['power'] / df['turn_duration']
     df['eps'] = df['energy_delta'] / df['turn_duration']
@@ -511,8 +540,38 @@ def move_chart():
     df['dpe'] = dpe
     df['prod'] = df['dps'] * df['eps']
     df = df.sort_values('prod')
-
     df = df.sort_values('dpe')
+
+    rows = []
+    for ke, part in df.groupby(['power', 'turn_duration', 'energy_delta']):
+        if len(part) > 1:
+            print(', '.join([f'{n:>30}' for n in part['name']]))
+        row = {
+            'dps': part['dps'].iloc[0],
+            'eps': part['eps'].iloc[0],
+            'dpe': part['dpe'].iloc[0],
+            'power': part['power'].iloc[0],
+            'turn_duration': part['turn_duration'].iloc[0],
+            'energy_delta': part['energy_delta'].iloc[0],
+            'prod': part['prod'].iloc[0],
+            'names': ',\n'.join(part['name'].iloc[0:1])
+        }
+        rows.append(row)
+    df2 = pd.DataFrame(rows)
+    print(df2)
+    pt = df2.pivot('dps', 'eps', 'names')
+    print(pt.to_string())
+
+
+
+
+
+    # sns.scatterplot(data=df, x='energy_delta', y='power', color='type', label='name')
+    sns.scatterplot(data=df,
+                    x='energy_delta',
+                    y='power',
+                    label='name')
+
     # df = df[df['type'] == 'Steel']
     df = df[df['type'] == 'Ice']
     print(df.to_string())
@@ -1123,6 +1182,7 @@ def deoxys():
         10,14,14,
         11,12,14,
         11,14,12,
+sl: command not found
         11,14,15,
         11,15,11,
         11,15,11,
@@ -1258,7 +1318,6 @@ def deoxys():
 
     bad_candidates = set(set(have_ivs) - set(great_optimal_spreads)) - set(optimal_spreads_ultra)
 
-
     badx = great_table.loc[bad_candidates].sort_values('encounter_51_rank').iloc[50:]
     bady = ultra_table.loc[bad_candidates].sort_values('encounter_51_rank').iloc[50:]
 
@@ -1270,7 +1329,7 @@ def deoxys():
     ultra_table.loc[junkos]
 
     if 1:
-        from pypogo.pvpoke_experiment import run_pvpoke_simulation
+        from pypogo.pvpoke_driver import run_pvpoke_simulation
         # Test in PVP Poke
         top = table.loc[table.index.intersection(have_ivs)].iloc[0:2]
         interest = table.loc[table.index.intersection(great_optimal_spreads).intersection(have_ivs)]
@@ -1382,7 +1441,7 @@ def deoxys():
 
 def master_check():
     import pypogo
-    from pypogo.pvpoke_experiment import run_pvpoke_simulation
+    from pypogo.pvpoke_driver import run_pvpoke_simulation
     # Test in PVP Poke
     mons = [
         pypogo.Pokemon('Ho-Oh', ivs=[15, 15, 15], level=40, moves=['Incinerate', 'Brave Bird', 'Earthquake']),
@@ -1506,9 +1565,74 @@ def master_check():
 
 def dialga_raids():
     mon = Pokemon.random('dialga', ivs=[15, 15, 15], level=40, moves=['Dragon Breath', 'Iron Head'])
-    results = wild_lucky_encounter_rank_breakdown(mon, float('inf'), methods=['encounter'], max_levels=[41, 51])
+    results = wild_lucky_encounter_rank_breakdown(mon, float('inf'), methods=['encounter'], max_levels=[40, 41, 50, 51])
 
-    table = results['encounter_50']
+    table = results['encounter_41']
     flags = [all([iva >= 15, ivd >= 14, ivs >= 12]) for iva, ivd, ivs in table.index]
-    valid = table[flags]
+    valid = table[flags].sort_values('cp', ascending=False)
     print(valid)
+
+    pool = table[table.raid_cp > valid.raid_cp.min()]
+    print(pool)
+    len(pool)
+    len(valid)
+
+    """
+                   cp  level      attack     defense  stamina  stat_product_k  raid_cp
+    iva ivd ivs
+    15  15  15   4090   41.0  230.637003  179.737802      174     7213.028716     2307
+            14   4080   41.0  230.637003  179.737802      174     7213.028716     2302
+        14  14   4071   41.0  230.637003  178.942502      174     7181.112659     2297
+            15   4080   41.0  230.637003  178.942502      174     7181.112659     2302
+        15  13   4071   41.0  230.637003  179.737802      173     7171.574528     2297
+        14  13   4062   41.0  230.637003  178.942502      173     7139.841897     2292
+        15  12   4062   41.0  230.637003  179.737802      172     7130.120340     2291
+        14  12   4053   41.0  230.637003  178.942502      172     7098.571135     2286
+    """
+
+
+def umb():
+    import pypogo
+
+    for name in ['dialga', 'umbreon', 'togekiss', 'giratina']:
+        print('========')
+        print('name = {!r}'.format(name))
+        for level in [40, 41, 50, 51]:
+            mon1 = pypogo.Pokemon(name, level=level, ivs=[15, 15, 15])
+            mon2 = pypogo.Pokemon(name, level=level, ivs=[15, 15, 14])
+            print('----')
+            print('level = {!r}'.format(level))
+            print('mon1.adjusted {} = {}'.format(mon1.ivs, ub.repr2(mon1.adjusted, nl=0, precision=3)))
+            print('mon2.adjusted {} = {}'.format(mon2.ivs, ub.repr2(mon2.adjusted, nl=0, precision=3)))
+            print('mon1.base_stats = {}'.format(ub.repr2(mon1.base_stats, nl=0, precision=1)))
+
+    min_hp = pypogo.Pokemon('shuckle').base_stats['stamina']
+    max_hp = pypogo.Pokemon('blissey').base_stats['stamina']
+
+    # min_hp = 190
+    # max_hp = 220
+
+    import numpy as np
+    base_hps = np.arange(min_hp, max_hp)
+
+    base_functional_cps = ub.ddict(list)
+
+    for level in [40, 41, 50, 51]:
+        mult = pypogo.pokemon.CPM_LUT[level]
+        iv14 = ((base_hps + 14) * mult).astype(int)
+        iv15 = ((base_hps + 15) * mult).astype(int)
+        is_functional = iv14 == iv15
+        for base_hp in base_hps[is_functional]:
+            base_functional_cps[base_hp].append(level)
+
+    for base_hp in set(base_hps) - set(base_functional_cps.keys()):
+        base_functional_cps[base_hp] = tuple()
+        pass
+
+    # ump is 216 base
+    # tog is 198 base
+    # dialga is 205 base
+    print('base_functional_cps = {}'.format(ub.repr2(base_functional_cps, nl=1)))
+
+    levels_to_functional_base_stams = ub.invert_dict(ub.map_vals(tuple, base_functional_cps), unique_vals=False)
+    print('levels_to_functional_base_stams = {}'.format(ub.repr2(levels_to_functional_base_stams, nl=1)))

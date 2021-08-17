@@ -87,6 +87,9 @@ class PogoAPI(ub.NiceRepr):
             'pvp_fast_moves':  api.base + 'pvp_fast_moves.json',
             'pvp_charged_moves': api.base + 'pvp_charged_moves.json',
         }
+
+        # TODO: determine when to redownload
+
         api.data = {}
         for key, url in api.routes.items():
 
