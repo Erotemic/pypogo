@@ -118,6 +118,20 @@ class Pokemon(ub.NiceRepr):
             if level is None and self.ivs is not None:
                 self.populate_level()
 
+    def slug(self):
+        """
+        Get slug text suitable for hashing
+
+        Example:
+            import pypogo
+            self = pypogo.Pokemon.random()
+            print(self.slug())
+
+        """
+        parts = ub.sorted_keys(ub.dict_diff(self.__json__(), ['adjusted']))
+        slug = ub.repr2(parts, compact=1).lower().replace(' ', '')
+        return slug
+
     def init_pvp_state(self):
         self.hp = int(self.adjusted['stamina'])
         self.energy = 0
@@ -265,7 +279,7 @@ class Pokemon(ub.NiceRepr):
             >>> Pokemon('castform', form='snowy', ivs=[0, 0, 0], level=30).populate_stats()
             >>> Pokemon('castform_snowy', ivs=[0, 0, 0], level=30).populate_stats()
         """
-        info = self.api.get_info(name=self.name, form=self.form)
+        info = self.api.get_pokemon_info(name=self.name, form=self.form)
         self.learnable = self.api.learnable[self.name]
         self.info = info
         # self.items = items
@@ -1017,7 +1031,8 @@ class Pokemon(ub.NiceRepr):
     def populate_move_stats(self):
         """
         Example:
-            >>> self = Pokemon('medicham', moves=['counter', 'power_up_punch'])
+            >>> import pypogo
+            >>> self = pypogo.Pokemon('medicham', moves=['counter', 'power_up_punch'])
             >>> self.populate_move_stats()
             >>> self.pvp_fast_move
             >>> print('self.pvp_fast_move = {!r}'.format(self.pvp_fast_move))
@@ -1032,23 +1047,15 @@ class Pokemon(ub.NiceRepr):
         pvp_charge_cand = []
 
         for move in self.moves:
-            move = self.api.normalize(move)
-            if move in self.api.pve_fast_moves:
-                fast = self.api.pve_fast_moves[move]
-                pve_fast_cand.extend(fast)
-            elif move in self.api.pve_charged_moves:
-                charged = self.api.pve_charged_moves[move]
-                pve_charge_cand.extend(charged)
+            move_info = self.api.get_move_info(move)
+            if move_info['move_type'] == 'fast':
+                pve_fast_cand.extend(move_info['pve'])
+                pvp_fast_cand.extend(move_info['pvp'])
+            elif move_info['move_type'] == 'charged':
+                pve_charge_cand.extend(move_info['pve'])
+                pvp_charge_cand.extend(move_info['pvp'])
             else:
-                raise KeyError('unknown move {}'.format(move))
-            if move in self.api.pvp_fast_moves:
-                fast = self.api.pvp_fast_moves[move]
-                pvp_fast_cand.extend(fast)
-            elif move in self.api.pvp_charged_moves:
-                charged = self.api.pvp_charged_moves[move]
-                pvp_charge_cand.extend(charged)
-            else:
-                raise KeyError('unknown move {}'.format(move))
+                raise KeyError
 
         if len(pve_fast_cand) != 1:
             raise Exception('MUST HAVE 1 FAST MOVE')

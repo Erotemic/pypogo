@@ -45,14 +45,14 @@ class PogoAPI(ub.NiceRepr):
         >>> from pypogo.pogo_api import *  # NOQA
         >>> api = PogoAPI()
         >>> name = 'machamp-shadow'
-        >>> print(ub.repr2(api.get_info(name)))
+        >>> print(ub.repr2(api.get_pokemon_info(name)))
         >>> form = None
         >>> name = 'beedrill'
-        >>> print(ub.repr2(api.get_info(name)))
+        >>> print(ub.repr2(api.get_pokemon_info(name)))
         >>> name = 'farfetchd_galarian'
-        >>> print(ub.repr2(api.get_info(name)))
+        >>> print(ub.repr2(api.get_pokemon_info(name)))
         >>> name = 'stunfisk_galarian'
-        >>> print(ub.repr2(api.get_info(name)))
+        >>> print(ub.repr2(api.get_pokemon_info(name)))
     """
     def __init__(api):
         api.base = 'https://pogoapi.net/api/v1/'
@@ -325,49 +325,89 @@ class PogoAPI(ub.NiceRepr):
         return name, form
 
     def get_move_info(api, move_name):
+        """
+        Example:
+            >>> from pypogo.pogo_api import *  # NOQA
+            >>> api = PogoAPI()
+            >>> move_name = 'super power'
+            >>> print(ub.repr2(api.get_move_info(move_name)))
+
+            # with pytest.raises
+            # >>> move_name = 'superpower'
+            # >>> print(ub.repr2(api.get_move_info(move_name)))
+        """
         pvp_cand = []
         pve_cand = []
-        move = api.normalize(move_name)
-        if move in api.pve_fast_moves:
-            fast = api.pve_fast_moves[move]
-            pve_cand.extend(fast)
-        elif move in api.pve_charged_moves:
-            charged = api.pve_charged_moves[move]
-            pve_cand.extend(charged)
-        else:
-            raise KeyError('unknown move {}'.format(move))
-        if move in api.pvp_fast_moves:
-            fast = api.pvp_fast_moves[move]
-            pvp_cand.extend(fast)
-        elif move in api.pvp_charged_moves:
-            charged = api.pvp_charged_moves[move]
-            pvp_cand.extend(charged)
-        else:
-            raise KeyError('unknown move {}'.format(move))
+        try:
+            move = api.normalize(move_name)
+            if move in api.pve_fast_moves:
+                fast = api.pve_fast_moves[move]
+                pve_cand.append((fast, 'fast'))
+            elif move in api.pve_charged_moves:
+                charged = api.pve_charged_moves[move]
+                pve_cand.append((charged, 'charged'))
+            else:
+                raise KeyError('unknown move {}'.format(move))
+            if move in api.pvp_fast_moves:
+                fast = api.pvp_fast_moves[move]
+                pvp_cand.append((fast, 'fast'))
+            elif move in api.pvp_charged_moves:
+                charged = api.pvp_charged_moves[move]
+                pvp_cand.append((charged, 'charged'))
+            else:
+                raise KeyError('unknown move {}'.format(move))
 
-        return pve_cand, pvp_cand
+            if len(pve_cand) != 1:
+                raise Exception('ambiguous pve_cand move')
+            if len(pvp_cand) != 1:
+                raise Exception('ambiguous pvp_cand move')
+        except Exception:
+            suggest_spelling_correction(move_name, api.all_move_names, top=3)
+            raise
 
-    def get_info(api, name, form=None):
+        move_type1 = pve_cand[0][1]
+        move_type2 = pvp_cand[0][1]
+        assert move_type2 == move_type1
+        move_type = move_type1
+
+        move_info = {
+            'move_type': move_type,
+            'pve': pve_cand[0][0],
+            'pvp': pvp_cand[0][0],
+        }
+        return move_info
+
+    @ub.memoize_property
+    def all_move_names(api):
+        move_names = sorted(
+            set(api.pve_fast_moves.keys()) |
+            set(api.pve_charged_moves) |
+            set(api.pvp_fast_moves) |
+            set(api.pvp_charged_moves)
+        )
+        return move_names
+
+    def get_pokemon_info(api, name, form=None):
         """
         Example:
             >>> from pypogo.pogo_api import *  # NOQA
             >>> api = PogoAPI()
             >>> name = 'stunfisk_galarian'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
             >>> name = 'stunfisk'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
             >>> name = 'umbreon'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
             >>> name = 'eevee'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
             >>> name = 'castform_snowy'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
 
             >>> name = 'smeargle'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
 
             >>> name = 'wormadam'
-            >>> print(ub.repr2(api.get_info(name)))
+            >>> print(ub.repr2(api.get_pokemon_info(name)))
 
         """
         try:
@@ -385,12 +425,8 @@ class PogoAPI(ub.NiceRepr):
             }
         except Exception:
             if True:
-                import xdev
                 all_names = list(api.name_to_stats.keys())
-                distances = xdev.edit_distance(name, all_names)
-                idxs = ub.argsort(distances)[0:10]
-                candidates = list(ub.take(all_names, idxs))
-                print('did you mean on of: {}?'.format(ub.repr2(candidates, nl=1)))
+                suggest_spelling_correction(name, all_names, top=10)
             raise Exception(
                 'name={name}, form={form}, name_={name_}, form_={form_}'.format(**locals()))
 
@@ -460,6 +496,15 @@ class PogoAPI(ub.NiceRepr):
                 shadow = info['form'] == 'Shadow'
                 mon = pypogo.Pokemon(name, form=info['form'], shadow=shadow)
                 yield mon
+
+
+def suggest_spelling_correction(name, all_names, top=10):
+    import xdev
+    distances = xdev.edit_distance(name, all_names)
+    idxs = ub.argsort(distances)[0:top]
+    candidates = list(ub.take(all_names, idxs))
+    print('did you mean on of: {}?'.format(ub.repr2(candidates, nl=1)))
+    return candidates
 
 
 # HACK: Make a global API variable

@@ -400,7 +400,7 @@ def breakpoints():
     move = mon1.pvp_charge_moves[0]
 
     for move_name in ub.flatten(mon1.candidate_moveset().values()):
-        move = mon1.api.get_move_info(move_name)[1][0]
+        move = mon1.api.get_move_info(move_name)['pvp']
         #
         # Breakpoints for each move
         mon1.adjusted['attack']
@@ -445,7 +445,7 @@ def breakpoints():
     #
     # Bulkpoints for each move
     for move_name in ub.flatten(mon2.candidate_moveset().values()):
-        move = mon1.api.get_move_info(move_name)[1][0]
+        move = mon1.api.get_move_info(move_name)['pvp']
 
         info = compute_move_effect(mon2, mon1, move)
         attack_power = info['attack_power']
@@ -1636,3 +1636,341 @@ def umb():
 
     levels_to_functional_base_stams = ub.invert_dict(ub.map_vals(tuple, base_functional_cps), unique_vals=False)
     print('levels_to_functional_base_stams = {}'.format(ub.repr2(levels_to_functional_base_stams, nl=1)))
+
+
+def master_check2():
+    import pandas as pd
+    import pypogo
+    from pypogo.pvpoke_driver import run_pvpoke_simulation
+    # Test in PVP Poke
+
+    # meta = [
+    #     Dialga, Mewtwo, Giratina-O, Togekiss, Lugia, Groudon, Excadrill, Kyogre, Garchomp, Yveltal
+    #     Ho-oh, Giratina-A, Zekrom, Palkia, Mamoswine, Shadow Snorlax, Landorus-I, Landorus-T
+    #     #
+    #     Snorlax, Dragonite, Metagross,
+    #     Machamp, Conkeldurr, Rhyperior, Heatran, Shadow Tyranitar,
+    #     Reshiram, Sylveon,
+    # ]
+    mons = [
+        pypogo.Pokemon('Ho-Oh', ivs=[15, 15, 15], level=40, moves=['Incinerate', 'Brave Bird', 'Earthquake']),
+        pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40, moves=['Psycho Cut', 'Psystrike', 'Focus Blast']),
+        pypogo.Pokemon('Melmetal', ivs=[15, 14, 15], level=40, moves=['Thunder shock', 'Super power', 'Rock Slide']),
+        pypogo.Pokemon('Giratina', form='origin', ivs=[15, 14, 15], level=40, moves=['Shadow Claw', 'Ominous Wind', 'Shadow Ball']),
+        pypogo.Pokemon('Landorus', form='therian', ivs=[15, 15, 15], level=40, moves=['Mud Shot', 'Super power', 'Stone Edge']),
+        pypogo.Pokemon('Kyogre', ivs=[15, 15, 14], level=40, moves=['Waterfall', 'Surf', 'Blizzard']),
+        pypogo.Pokemon('Garchomp', ivs=[15, 15, 15], level=40, moves=['Dragon Tail', 'Earth Power', 'Sand Tomb']),
+        pypogo.Pokemon('Togekiss', ivs=[15, 15, 14], level=40, moves=['Charm', 'Ancient Power', 'Flamethrower']),
+    ]
+    for mon in mons:
+        mon.populate_move_stats()
+
+    results = run_pvpoke_simulation(mons, league='master-classic')
+
+    shield_sit = (0, 0)
+    matchups = results[shield_sit]
+
+    matchups = matchups.drop([
+        'Magnezone Sp+MrS/WC 15/15/15',
+        'Swampert MS+HC/Eq 15/15/15',
+        'Machamp C+CrC/RS 15/15/15',
+        'Heatran FS+IH/Ft 15/15/15',
+        'Sylveon Ch+M/Psh 15/15/15',
+        'Rhyperior MSl+RW/S 15/15/15',
+        'Gyarados DB+AT/Cr 15/15/15',
+    ], axis=1)
+
+    # TODO maximize setcover
+
+    matchups.sum(axis=1)
+
+    wins = (matchups > 500)
+    wins.sum(axis=1).sort_values()
+
+    candidate_sets_dict = {
+        k: [k1 for k1, v1 in v.items() if v1]
+        for k, v in wins.T.to_dict().items()
+    }
+
+    items = wins.columns
+    import kwarray
+
+    item_values = {k: 1 for k in items}
+    item_values = {
+        'Dialga DB+IH/DM 15/15/15': 3.5,
+        'Dialga DB+IH/T 15/15/15': 3.5,
+        'Dragonite DB+DC/Hu 15/15/15': 1,
+        'Dragonite DT+DC/Hu 15/15/15': 1,
+        'Excadrill MS+RS/DR 15/15/15': 1.1,
+        'Garchomp MS+O/EP 15/15/15': 1,
+        'Garchomp DT+O/ST 15/15/15': 1,
+        'Giratina (Altered) SC+DC/SS 15/15/15': 1,
+        'Giratina (Origin) SC+SB/OW 15/15/15': 1.5,
+        'Groudon MS+Eq/FiP 15/15/15': 1.5,
+        'Groudon DT+Eq/FiP 15/15/15': 1.5,
+        'Ho-Oh I+Eq/BrB 15/15/15': 1,
+        'Kyogre W+S/Bl 15/15/15': 1.5,
+        'Kyogre W+S/T 15/15/15': 1.5,
+        'Landorus (Incarnate) MS+EP/RS 15/15/15': 0.5,
+        'Landorus (Therian) MS+SP/SE 15/15/15': 0.5,
+        'Lugia DT+SA/A 15/15/15': 1.5,
+        'Mamoswine PS+Av/Bd 15/15/15': 0.5,
+        'Melmetal TS+RS/SP 15/15/15': 1.5,
+        'Metagross BP+MM/Eq 15/15/15': 0.5,
+        'Mewtwo PC+IB/Pst 15/15/15': 1.5,
+        'Palkia DB+AT/DM 15/15/15': 0.5,
+        'Snorlax L+BS/Eq 15/15/15': 0.5,
+        'Togekiss Ch+AP/Ft 15/15/15': 1.5,
+        'Yveltal Sn+DP/FB 15/15/15': 1.5,
+        'Zekrom DB+Cr/WC 15/15/15': 0.5
+    }
+
+    # set_weights = {
+    #     # 'Melmetal TS+SP/RS 15/15/15': 4,
+    # }
+
+    # Not exactly a set cover
+    # What is the right linear integer program here?
+
+    solution = kwarray.setcover(
+        candidate_sets_dict=candidate_sets_dict,
+        items=items,
+        item_values=item_values,
+        # set_weights=set_weights,
+        # set_weights=
+        max_weight=3,
+        # algo='exact'
+        algo='approx'
+    )
+    print('solution = {}'.format(ub.repr2(list(solution.keys()), nl=1)))
+
+    solution1 = [
+        'Giratina (Origin) SC+OW/SB 15/14/15',
+        'Landorus (Therian) MS+SP/SE 15/15/15',
+        'Togekiss Ch+AP/Ft 15/15/14',
+    ]
+    solution2 = [
+        'Kyogre W+S/Bl 15/15/14',
+        'Melmetal TS+SP/RS 15/15/15',
+        'Garchomp DT+EP/ST 15/15/15',
+    ]
+    solution3 = [
+        'Giratina (Origin) SC+OW/SB 15/14/15',
+        'Landorus (Therian) MS+SP/SE 15/15/15',
+        'Togekiss Ch+AP/Ft 15/15/14',
+    ]
+    solution4 = [
+        'Ho-Oh I+BrB/Eq 15/15/15',
+        'Giratina (Origin) SC+OW/SB 15/14/15',
+        'Togekiss Ch+AP/Ft 15/15/14',
+    ]
+    solution4 = [
+        'Mewtwo PC+Pst/FB 15/15/15',
+        'Togekiss Ch+AP/Ft 15/15/14',
+        'Giratina (Origin) SC+OW/SB 15/14/15',
+    ]
+
+    matchups.loc[solution1].sum(axis=0).sort_values()
+    matchups.loc[solution2].sum(axis=0).sort_values()
+    matchups.loc[solution3].sum(axis=0).sort_values()
+
+    matchups.loc[solution4].sum(axis=0).sort_values()
+    matchups.loc[solution4].T
+
+
+def mew():
+    import pypogo
+    from pypogo.pvpoke_driver import run_pvpoke_simulation
+    # Test in PVP Poke
+    base = pypogo.Pokemon('mew', ivs=[15, 12, 11], moves=['Shadow Claw', 'Wild Charge', 'Surf']).maximize(max_cp=1500)
+    print(base.league_ranking(min_iv=10))
+    mons = [
+        base.copy(ivs=[12, 10, 14]).maximize(1500),
+        base,
+        base.copy(ivs=[10, 10, 10]).maximize(1500),
+        base.copy(ivs=[15, 15, 15]).maximize(1500),
+    ]
+    for mon in mons:
+        mon.populate_move_stats()
+
+    results = run_pvpoke_simulation(mons, league='great')
+
+    for ss, df in results.items():
+        print('\n======\nShields = {!r}'.format(ss))
+        wins = df > 500
+        flips = wins.apply(lambda x: x[0] ^ x[1:], axis=0)
+        flippers = flips.columns[flips.any(axis=0)]
+        print('')
+        print('Average Score')
+        print(df.mean(axis=1))
+        print('')
+        print('Flippers')
+        print(df.T.loc[flippers])
+        print('')
+        pass
+
+
+def pairwise_drops_test():
+    import pypogo
+    import pandas as pd
+    from pypogo.pvpoke_driver import run_pvpoke_simulation
+
+    levels = [40, 41, 50, 51]
+    # levels = [50, 51]
+    levels = [40]
+
+    for level in levels:
+        # Test in PVP Poke
+
+        # base = pypogo.Pokemon('Lugia', ivs=[15, 15, 15], level=level, moves=['Dragon Tail', 'Aeroblast', 'Sky Attack'])
+        base = pypogo.Pokemon('Melmetal', ivs=[15, 15, 15], level=level, moves=['Thunder shock', 'Super power', 'Rock Slide'])
+        mons = [base]
+        # mons.append(base.copy(ivs=[15, 15, 14]))
+        mons.append(base.copy(ivs=[15, 14, 15]))
+        # mons.append(base.copy(ivs=[15, 13, 15]))
+
+        # base = pypogo.Pokemon('Umbreon', ivs=[15, 15, 15], level=level, moves=['Snarl', 'Last Resort', 'Dark Pulse'])
+        # mons = [base]
+        # mons.append(base.copy(ivs=[15, 15, 14]))
+        # mons.append(base.copy(ivs=[15, 15, 15], moves=['Snarl', 'Last Resort', 'Dark Pulse'])))
+
+        for mon in mons:
+            mon.populate_move_stats()
+
+        for mon in mons:
+            if mon.cp <= 1500:
+                league = 'great'
+            elif mon.cp <= 2500:
+                league = 'ultra'
+            elif mon.level <= 41:
+                league = 'master-classic'
+            elif mon.level <= 51:
+                league = 'master'
+            else:
+                raise AssertionError
+            break
+
+        print('\n\n')
+        print('============')
+        print('mons = {}'.format(ub.repr2(mons, nl=1, sv=1)))
+        print('league = {!r}'.format(league))
+        print('============')
+
+        results = run_pvpoke_simulation(mons, league='auto')
+
+        fixed_results = {}
+        for shield_sit, data in results.items():
+            data.index
+            data['name'] = [mon.name for mon in mons]
+            data['ivs'] = [tuple(mon.ivs) for mon in mons]
+            fixed_data = data.set_index(['name', 'ivs'])
+            fixed_results[shield_sit] = fixed_data
+
+        name_comparison = {}
+        for shield_sit, data in fixed_results.items():
+            for name, group in data.groupby('name'):
+                name_comparison.setdefault(name, {})
+                name_comparison[name][shield_sit] = group
+
+        assert len(name_comparison) == 1
+        name, shield_group = ub.peek(name_comparison.items())
+
+        for ss, scores in shield_group.items():
+            # assert len(scores) == 2
+            wins = scores > 500
+            delta = scores.max(axis=0) - scores.min(axis=0)
+            # delta = (scores.iloc[0] - scores.iloc[1]).abs()
+            # delta > 50
+            is_flipped = ~wins.apply(ub.allsame, axis=0)
+            is_big_change = is_flipped | (delta > 5)
+            # flippable = scores.T[is_flipped].T
+            changers = scores.T[is_big_change].T
+            if changers.size:
+                print('Big Change Matchups in Shield Situation = {!r}'.format(ss))
+                print(changers)
+                print('\n')
+            else:
+                print('Big Change Matchups in Shield Situation = {!r} - None'.format(ss))
+
+    _to_join = []
+    for ss, scores in shield_group.items():
+        nas, nds = ss
+        new_cols = pd.MultiIndex.from_arrays([
+            scores.columns,
+            pd.Index([nas] * scores.shape[1], name='n_shields_atck'),
+            pd.Index([nds] * scores.shape[1], name='n_shields_defd'),
+        ])
+        scores2 = scores.copy()
+        scores2.columns = new_cols
+        _to_join.append(scores2)
+
+    # Combined dataframe of all sheild situations
+    all_sits = pd.concat(_to_join, axis=1)
+    all_sits = all_sits.sort_index(axis=1)
+
+    # print(all_sits.sort_index(axis=1))
+    # rows = []
+    # for (nas, nds), data in results.items():
+    #     print('nas, nds = {}, {}'.format(nas, nds))
+    #     print(data.sum(axis=1))
+
+    #     for name, row_ in data.iterrows():
+    #         row = {}
+    #         row['name'] = name
+    #         row['score'] = row_.sum()
+
+    #         x = (row_ > 500)
+    #         win_vs = x[x].index
+
+    #         row['wins'] = (row_ > 500).sum()
+    #         row['losses'] = (row_ < 500).sum()
+    #         row['ties'] = (row_ == 500).sum()
+    #         row['win_vs'] = set(win_vs.tolist())
+
+    #         row['nas'] = nas
+    #         row['nds'] = nds
+    #         rows.append(row)
+
+    # # TODO: write the proper analysis for dropped matchups
+
+    # df2 = pd.DataFrame(rows)
+    # summary = {}
+    # rows2 = []
+    # for name, subdf in df2.groupby('name'):
+    #     row3 = {'name': name}
+    #     for _, row2_ in subdf.iterrows():
+    #         winkey = 'wins-{}-{}'.format(row2_['nas'], row2_['nds'])
+    #         row3[winkey] = row2_['wins']
+    #         winvskey = 'wins-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+    #         row3[winvskey] = row2_['win_vs']
+    #     row3['score'] = subdf['score'].sum()
+    #     row3['total_wins'] = subdf['wins'].sum()
+    #     row3['total_ties'] = subdf['ties'].sum()
+    #     rows2.append(row3)
+    # df3 = pd.DataFrame(rows2).set_index('name')
+    # print(df3)
+
+    # summary = {}
+    # rows2 = []
+    # for name, subdf in df2.groupby('name'):
+    #     row3 = {'name': name}
+    #     drops = {}
+    #     for _, row2_ in subdf.iterrows():
+    #         winkey = 'wins-{}-{}'.format(row2_['nas'], row2_['nds'])
+    #         row3[winkey] = row2_['wins']
+    #         winvskey = 'wins-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+    #         dropvskey = 'drop-vs-{}-{}'.format(row2_['nas'], row2_['nds'])
+    #         all_wins_vs = set.union(*df3[winvskey])
+    #         drops[dropvskey] = all_wins_vs - row2_['win_vs']
+
+    #     row3['drops'] = set.union(*drops.values())
+    #     row3['score'] = subdf['score'].sum()
+    #     row3['total_wins'] = subdf['wins'].sum()
+    #     row3['total_ties'] = subdf['ties'].sum()
+    #     rows2.append(row3)
+    # df4 = pd.DataFrame(rows2).set_index('name')
+    # print(df4.sort_values('total_wins'))
+    # print(ub.repr2(df4.drops.to_dict()))
+
+
+    # df['drops-vs-0-0'] = df['wins-vs-0-0'].apply(lambda x: all_wins_vs - x)
