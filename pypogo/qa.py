@@ -1,6 +1,8 @@
 import ubelt as ub
 from pypogo.pokemon import Pokemon
 from pypogo.pogo_api import api
+import numpy as np
+import pandas as pd
 
 
 def stats_distro():
@@ -1010,7 +1012,10 @@ def attack_breakpoint_grid(mon1, mon2, move):
 def deoxys():
     import pypogo
     # mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
-    mon = pypogo.Pokemon.random('deoxys', form='defense')
+
+    base = mon = pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'psycho boost', 'thunderbolt'])
+    base = mon = pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'psycho boost', 'rock slide'])
+    base = mon = pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'thunderbolt', 'rock slide'])
 
     # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
 
@@ -1050,6 +1055,7 @@ def deoxys():
             15,11,15
             15,10,15
             ''').split('\n')]
+
 
     have_ivs = [tuple([int(x) for x in p.strip().split(',') if x]) for p in ub.codeblock(
         '''
@@ -1182,7 +1188,6 @@ def deoxys():
         10,14,14,
         11,12,14,
         11,14,12,
-sl: command not found
         11,14,15,
         11,15,11,
         11,15,11,
@@ -1240,7 +1245,7 @@ sl: command not found
         (13, 12, 12),
         (13, 13, 15),
         (13, 14, 11),
-        (14, 10, 11)
+        (14, 10, 11),
         (14, 11, 14),
         (14, 12, 10),
         (14, 13, 15),
@@ -1250,6 +1255,94 @@ sl: command not found
     ]
     print(ub.repr2(ub.find_duplicates(have_ivs), nl=-1))
     print(len(set(have_ivs)) / 216)
+
+    if 1:
+        have_ivs = ub.oset([
+            tuple([int(x) for x in p.strip().split(',') if x])
+            for p in ub.codeblock(
+                '''
+                10,11,13,
+                10,12,13,
+                11,15,10,
+                11,12,12,
+                10,12,14,
+                11,15,11,
+                11,14,13,
+                10,13,15,
+                11,13,12,
+                11,13,12,
+                14,10,14,
+                15,10,12,
+                15,12,11,
+                15,13,10,
+                12,14,15,
+                15,12,10,
+                12,15,14,
+                15,11,10,
+                12,12,15,
+                12,13,13,
+                12,15,12,
+                10,15,15
+                15,12,13,
+                15,15,12,
+                15,13,14,
+                15,13,15,
+                14,15,15,
+                15,15,13,
+                10,13,13,
+                12,14,14,
+                ''').split('\n')]) - set(optimal_spreads_ultra) - set(great_optimal_spreads)
+
+        acc = []
+
+        for league in ['great', 'ultra']:
+            for mon in [pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'psycho boost', 'thunderbolt']),
+                        pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'psycho boost', 'rock slide']),
+                        pypogo.Pokemon.random('deoxys', form='defense', moves=['counter', 'thunderbolt', 'rock slide'])]:
+                mons = [base]
+
+                mons = [mon.copy(ivs=ivs).maximize(league) for ivs in sorted(set(have_ivs) - set(deleted))]
+                for mon in mons:
+                    mon.populate_move_stats()
+
+                # for mon in mons:
+                #     if mon.cp <= 1500:
+                #         league = 'great'
+                #     elif mon.cp <= 2500:
+                #         league = 'ultra'
+                #     elif mon.level <= 41:
+                #         league = 'master-classic'
+                #     elif mon.level <= 51:
+                #         league = 'master'
+                #     else:
+                #         raise AssertionError
+                #     break
+
+                # print('\n\n')
+                # print('============')
+                # print('mons = {}'.format(ub.repr2(mons, nl=1, sv=1)))
+                # print('league = {!r}'.format(league))
+                # print('============')
+                from pypogo.pvpoke_driver import run_pvpoke_simulation
+                results = run_pvpoke_simulation(mons, league='auto')
+
+                r = same_mon_sim_checks(mons, results)
+
+                sub = r[['total']]
+                sub['cp'] = [m.cp for m in mons]
+                sub = sub.sort_values('total')
+                sub = sub.assign(rank=np.arange(len(sub))[::-1])
+                sub = sub.assign(leage=league)
+                sub = sub.assign(moves=str(mon.moves))
+                acc.append(sub)
+
+        z = pd.concat(acc)
+        groups = []
+        for _, group in sorted(z.groupby('ivs')):
+            groups.append(group)
+        groups = sorted(groups, key=lambda x: x['rank'].min())
+        for g in groups:
+            print(g)
 
     print(set(great_optimal_spreads) & (set(have_ivs)))
     print(set(optimal_spreads_ultra) & (set(have_ivs)))
@@ -1972,5 +2065,59 @@ def pairwise_drops_test():
     # print(df4.sort_values('total_wins'))
     # print(ub.repr2(df4.drops.to_dict()))
 
-
     # df['drops-vs-0-0'] = df['wins-vs-0-0'].apply(lambda x: all_wins_vs - x)
+
+
+def same_mon_sim_checks(mons, results):
+    fixed_results = {}
+    for shield_sit, data in results.items():
+        data.index
+        data['name'] = [mon.name for mon in mons]
+        data['ivs'] = [tuple(mon.ivs) for mon in mons]
+        fixed_data = data.set_index(['name', 'ivs'])
+        fixed_results[shield_sit] = fixed_data
+
+    name_comparison = {}
+    for shield_sit, data in fixed_results.items():
+        for name, group in data.groupby('name'):
+            name_comparison.setdefault(name, {})
+            name_comparison[name][shield_sit] = group
+
+    assert len(name_comparison) == 1
+    name, shield_group = ub.peek(name_comparison.items())
+
+    # Summary
+    import pandas as pd
+    shield_summary_stats = []
+    for ss, scores in shield_group.items():
+        # assert len(scores) == 2
+        wins = scores > 500
+        delta = scores.max(axis=0) - scores.min(axis=0)
+        # delta = (scores.iloc[0] - scores.iloc[1]).abs()
+        # delta > 50
+        is_flipped = ~wins.apply(ub.allsame, axis=0)
+        is_big_change = is_flipped | (delta > 5)
+        # flippable = scores.T[is_flipped].T
+        changers = scores.T[is_big_change].T
+
+        if len(scores) < 20:
+            if changers.size:
+                print('Big Change Matchups in Shield Situation = {!r}'.format(ss))
+                print(changers)
+                print('\n')
+            else:
+                print('Big Change Matchups in Shield Situation = {!r} - None'.format(ss))
+
+        ss_stats = pd.DataFrame({
+            # 'scores': scores.sum(axis=1),
+            'wins': wins.sum(axis=1),
+        })
+        part = pd.concat([ss_stats.T], keys=[str(ss)], names=['ss']).T
+        shield_summary_stats.append(part)
+
+    summary_df = pd.concat(shield_summary_stats, axis=1)
+    summary_df['total'] = summary_df.sum(axis=1)
+
+    print(summary_df.sort_values('total').to_string())
+    # summary_df[summary_df.columns
+    return summary_df

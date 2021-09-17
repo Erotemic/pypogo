@@ -638,6 +638,8 @@ class Pokemon(ub.NiceRepr):
         if ivs == 'auto':
             ivs = 'maximize' if self.ivs is None else 'keep'
 
+        max_cp = _coerce_max_cp(max_cp)
+
         if isinstance(ivs, list):
             self.ivs = ivs
         elif ivs == 'maximize':
@@ -905,6 +907,8 @@ class Pokemon(ub.NiceRepr):
         base_attack = self.info['base_attack']
         base_defense = self.info['base_defense']
         base_stamina = self.info['base_stamina']
+        max_cp = _coerce_max_cp(max_cp)
+
         df = _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp, min_iv)
         return df
 
@@ -1577,3 +1581,16 @@ def _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp,
     max_ = df['stat_product_k'].max()
     df['percent'] = ((df['stat_product_k'] - min_) / (max_ - min_)) * 100
     return df
+
+
+def _coerce_max_cp(max_cp):
+    if isinstance(max_cp, str):
+        if 'great' in max_cp:
+            max_cp = 1500
+        elif 'ultra' in max_cp:
+            max_cp = 2500
+        elif 'master' in max_cp:
+            max_cp = np.inf
+        else:
+            raise KeyError(max_cp)
+    return max_cp
