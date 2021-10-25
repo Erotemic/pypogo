@@ -788,9 +788,9 @@ def lapras():
     # z = mon.league_ranking_table(max_cp=2500, min_iv=10)
 
 
-def wild_lucky_encounter_rank_breakdown(mon, max_cp, max_levels=[51, 50, 40],
-                                        methods=['wild', 'encounter', 'lucky'],
-                                        legacymode=True):
+def acquisition_rank_breakdown(mon, max_cp, max_levels=[51, 50, 40],
+                               methods=['trade', 'encounter', 'lucky'],
+                               legacymode=True):
     """
     max_levels=[51, 50, 40]
     methods=['wild', 'encounter', 'lucky']
@@ -1346,12 +1346,12 @@ def deoxys():
 
     print(set(great_optimal_spreads) & (set(have_ivs)))
     print(set(optimal_spreads_ultra) & (set(have_ivs)))
-    # wild_lucky_encounter_rank_breakdown(mon)
-    # def wild_lucky_encounter_rank_breakdown(mon):
+    # acquisition_rank_breakdown(mon)
+    # def acquisition_rank_breakdown(mon):
     max_cp = 1500
-    tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
+    tables = acquisition_rank_breakdown(mon, max_cp)
     great_table = table = tables['encounter_51']
-    ultra_tables = wild_lucky_encounter_rank_breakdown(mon, 2500)
+    ultra_tables = acquisition_rank_breakdown(mon, 2500)
     ultra_table = ultra_tables['encounter_50']
 
     if 1:
@@ -1401,7 +1401,7 @@ def deoxys():
 
     # https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
     max_cp = 2500
-    ultra_tables = wild_lucky_encounter_rank_breakdown(mon, max_cp)
+    ultra_tables = acquisition_rank_breakdown(mon, max_cp)
     ultra_table = ultra_tables['encounter_51']
     print('ultra interest')
     print(ultra_table.loc[ultra_table.index.intersection(optimal_spreads_ultra)])
@@ -1658,7 +1658,7 @@ def master_check():
 
 def dialga_raids():
     mon = Pokemon.random('dialga', ivs=[15, 15, 15], level=40, moves=['Dragon Breath', 'Iron Head'])
-    results = wild_lucky_encounter_rank_breakdown(mon, float('inf'), methods=['encounter'], max_levels=[40, 41, 50, 51])
+    results = acquisition_rank_breakdown(mon, float('inf'), methods=['encounter'], max_levels=[40, 41, 50, 51])
 
     table = results['encounter_41']
     flags = [all([iva >= 15, ivd >= 14, ivs >= 12]) for iva, ivd, ivs in table.index]
@@ -2121,3 +2121,47 @@ def same_mon_sim_checks(mons, results):
     print(summary_df.sort_values('total').to_string())
     # summary_df[summary_df.columns
     return summary_df
+
+
+def tina():
+    import pypogo
+    mon = pypogo.Pokemon('Giratina', form='Altered')
+    # mon_ranks = mon.league_ranking_table(2500, min_iv=10)
+    # print(mon_ranks)
+    tables = acquisition_rank_breakdown(mon, max_cp=2500, max_levels=[50], methods=['trade', 'wild', 'encounter'])
+    print(tables['encounter_50'])
+    print(tables['wild_50'])
+    print(tables['trade_50'])
+
+
+def hows_my_sableye_doing():
+    import pypogo
+    base = pypogo.Pokemon('sableye', ivs=[2, 15, 15], level=45.5, form='Purified')
+    xl_rankings = base.league_ranking_table(min_iv=2)
+    print(xl_rankings)
+    xl_rankings = xl_rankings.rename({'rank': 'xl_rank'}, axis=1)
+    classic_rankings = base.league_ranking_table(max_level=41)
+    classic_rankings = classic_rankings.rename({'rank': 'classic_rank'}, axis=1)
+
+    import pandas as pd
+
+    level = base.level
+    while level < 51.0:
+        mon = base.copy(level=level)
+        if mon.cp > 1500:
+            mon = base.copy(level=level - 0.5)
+            break
+        print('mon = {!r}'.format(mon))
+        print('mon.adjusted = {}'.format(ub.repr2(mon.adjusted, nl=0, precision=2)))
+        print('level = {!r}'.format(level))
+        print('mon.stat_product_k = {!r}'.format(mon.stat_product_k))
+
+        xl_rankings.stat_product_k >= mon.stat_product_k
+
+        xl_idx = len(xl_rankings) - xl_rankings.stat_product_k.iloc[::-1].searchsorted(mon.stat_product_k)
+        classic_idx = len(classic_rankings) - classic_rankings.stat_product_k.iloc[::-1].searchsorted(mon.stat_product_k)
+        xl_row = xl_rankings.iloc[max(xl_idx - 2, 0):xl_idx + 2].reset_index(drop=True)
+        classic_row = classic_rankings.iloc[max(classic_idx - 2, 0):classic_idx + 2].reset_index(drop=True)
+        # classic_row = classic_rankings[classic_rankings.stat_product_k < mon.stat_product_k].iloc[0:1]
+        print(pd.concat([xl_row, classic_row]))
+        level += 0.5
