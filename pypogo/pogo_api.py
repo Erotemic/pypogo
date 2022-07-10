@@ -4,7 +4,7 @@ import networkx as nx
 
 
 def master():
-    master_fpath = ub.grabdata('https://raw.githubusercontent.com/pokemongo-dev-contrib/pokemongo-game-master/master/versions/latest/V2_GAME_MASTER.json')
+    master_fpath = ub.grabdata('https://raw.githubusercontent.com/pokemongo-dev-contrib/pokemongo-game-master/master/versions/latest/V2_GAME_MASTER.json', expires=24 * 60 * 60)
     with open(master_fpath) as file:
         master = json.load(file)
 
@@ -19,7 +19,7 @@ def master():
 
     type_to_items = ub.group_items(master['template'], key=item_type)
 
-    pokemon_items = type_to_items['pokemon']
+    pokemon_items = type_to_items['pokemon']  # NOQA
     move_items = type_to_items['move']
 
     for item in move_items:
@@ -94,7 +94,7 @@ class PogoAPI(ub.NiceRepr):
         for key, url in api.routes.items():
 
             redo = 0
-            data_fpath = ub.grabdata(url, verbose=1, redo=redo)
+            data_fpath = ub.grabdata(url, verbose=1, redo=redo, expires=24 * 60 * 60)
 
             with open(data_fpath, 'r') as file:
                 data = json.load(file)

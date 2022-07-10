@@ -490,8 +490,20 @@ def move_chart():
     for move in api.pvp_charged_moves.values():
         assert len(move) == 1
         move = move[0]
+        move = move.copy()
+        move['buff_value'] = 0
         if move.get('buffs', None):
+            buffs = move.get('buffs', None)
+            p = buffs.get('activation_chance', 0.0)
+            buffness = {
+                'aac' : buffs.get('attacker_attack_stat_stage_change', 0.0),
+                'adc' : buffs.get('attacker_defense_stat_stage_change', 0.0),
+                'tac' : -1 * buffs.get('target_defense_stat_stage_change', 0.0),
+                'tdc' : -1 * buffs.get('target_attack_stat_stage_change', 0.0),
+            }
+            buff_value = p * sum(buffness.values())
             move['hasbuff'] = True
+            move['buff_value'] = buff_value
             move.get('buffs')['activation_chance']
             move.pop('buffs', None)
         longform.append(move)
@@ -502,24 +514,75 @@ def move_chart():
     df = df.sort_values('dpe')
 
     rows = []
-    for ke, part in df.groupby(['power', 'energy_delta']):
-        if len(part) > 1:
-            print(', '.join([f'{n:>30}' for n in part['name']]))
+    color_lut = {
+        #https://www.epidemicjohto.com/t882-type-colors-hex-colors
+        'Water': '#6390F0',
+        'Grass': '#7AC74C',
+        'Ghost': '#735797',
+        'Dragon': '#6F35FC',
+        'Dark': '#705746',
+        'Steel': '#B7B7CE',
+        'Ice': '#96D9D6',
+        'Fire': '#EE8130',
+        'Poison': '#A33EA1',
+        'Ground': '#E2BF65',
+        'Flying': '#A98FF3',
+        'Psychic': '#F95587',
+        'Bug': '#A6B91A',
+        'Rock': '#B6A136',
+        'Fighting': '#C22E28',
+        'Normal': '#A8A77A',
+        'Electric': '#F7D02C',
+        'Fairy': '#D685AD',
+    }
+    # for ke, part in df.groupby(['power', 'energy_delta', 'dpe'], sort=0):
+    groupers = ['dpe']
+    groupers = ['power', 'energy_delta', 'dpe']
+    from rich.table import Table
+    table = Table()
+    for ke, part in df.groupby(groupers, sort=0):
+        if not ub.iterable(ke):
+            ke = [ke]
+        import rich
+        if len(part) >= 1:
+            prows = part.to_dict('records')
+            from rich.text import Text
+            for prow in prows:
+                # padded name
+                if prow['buff_value'] == 0:
+                    prow['pname'] = '{:>20}'.format(prow['name'])
+                elif prow['buff_value'] > 0:
+                    prow['pname'] = '{:>20}'.format(prow['name'] + "↑" + str(prow['buff_value']))
+                elif prow['buff_value'] < 0:
+                    prow['pname'] = '{:>20}'.format(prow['name'] + "↓" + str(prow['buff_value']))
+                color = color_lut.get(prow['type'], None)
+                if color is not None:
+                    prow['cpname'] = Text(prow['pname'], style=color)
+                else:
+                    prow['cpname'] = prow['pname']
+
+            # lhs = 'p={:03d}, e={:04d}, dpe={:0.4f}'.format(*ke)
+            lhs = ub.repr2(ub.dzip(groupers, ke), compact=1, sort=0)
+            # rhs = ', '.join([f'{n:>30}' for n in part['name']])
+            rhs = [p['cpname'] for p in prows]
+            table.add_row(lhs, *rhs)
+            rich.print(lhs, *rhs)
         row = {
-            'power': ke[0],
-            'dpe': part['dpe'].iloc[0],
-            'energy_delta': ke[1],
+            # 'power': ke[0],
+            # 'dpe': part['dpe'].iloc[0],
+            # 'energy_delta': ke[1],
             'names': ',\n'.join(part['name'].iloc[0:1])
         }
         rows.append(row)
-    df2 = pd.DataFrame(rows)
+    df2 = pd.DataFrame(rows).reset_index()
+    rich.print(table)
+
     pt = df2.pivot('power', 'energy_delta', 'names')
     print(pt.to_string())
+
     pt = df2.pivot('dpe', 'energy_delta', 'names')
     print('\n')
     print(pt.to_string())
-
-
 
     longform = []
     for move in api.pvp_fast_moves.values():
@@ -559,14 +622,10 @@ def move_chart():
             'names': ',\n'.join(part['name'].iloc[0:1])
         }
         rows.append(row)
-    df2 = pd.DataFrame(rows)
+    df2 = pd.DataFrame(rows).reset_index()
     print(df2)
-    pt = df2.pivot('dps', 'eps', 'names')
+    pt = df2.pivot(['dps'], ['eps'], ['names'])
     print(pt.to_string())
-
-
-
-
 
     # sns.scatterplot(data=df, x='energy_delta', y='power', color='type', label='name')
     sns.scatterplot(data=df,
