@@ -23,7 +23,8 @@ Basic components of Reinforcement Learning:
 
 """
 from pypogo.pokemon import Pokemon
-from pypogo.utils import PriorityQueue, PriorityData
+from pypogo.utils import PriorityQueue  # NOQA
+from pypogo.utils import PriorityData  # NOQA
 import ubelt as ub
 import random
 import sortedcontainers
