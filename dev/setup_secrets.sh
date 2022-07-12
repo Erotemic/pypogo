@@ -168,12 +168,12 @@ upload_github_secrets(){
     #printf "%s" "$GITHUB_TOKEN" | gh auth login --hostname Github.com --with-token 
     gh auth login 
     source dev/secrets_configuration.sh
-    gh secret set "$VARNAME_TWINE_USERNAME" -b"${!VARNAME_TWINE_USERNAME}"
-    gh secret set "$VARNAME_TEST_TWINE_USERNAME" -b"${!VARNAME_TEST_TWINE_USERNAME}"
+    gh secret set "TWINE_USERNAME" -b"${!VARNAME_TWINE_USERNAME}"
+    gh secret set "TEST_TWINE_USERNAME" -b"${!VARNAME_TEST_TWINE_USERNAME}"
     toggle_setx_enter
-    gh secret set "$VARNAME_CI_SECRET" -b"${!VARNAME_CI_SECRET}"
-    gh secret set "$VARNAME_TWINE_PASSWORD" -b"${!VARNAME_TWINE_PASSWORD}"
-    gh secret set "$VARNAME_TEST_TWINE_PASSWORD" -b"${!VARNAME_TEST_TWINE_PASSWORD}"
+    gh secret set "CI_SECRET" -b"${!VARNAME_CI_SECRET}"
+    gh secret set "TWINE_PASSWORD" -b"${!VARNAME_TWINE_PASSWORD}"
+    gh secret set "TEST_TWINE_PASSWORD" -b"${!VARNAME_TEST_TWINE_PASSWORD}"
     toggle_setx_exit
 }
 
