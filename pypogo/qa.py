@@ -2165,3 +2165,52 @@ def hows_my_sableye_doing():
         # classic_row = classic_rankings[classic_rankings.stat_product_k < mon.stat_product_k].iloc[0:1]
         print(pd.concat([xl_row, classic_row]))
         level += 0.5
+
+
+def moveset_analysis(mon):
+    """
+    import pypogo
+    mon = pypogo.Pokemon('Mewtwo', ivs=[15, 15, 15], level=40, moves=['Psycho Cut', 'Psystrike', 'Focus Blast'])
+    """
+    import pypogo
+    import pandas as pd
+    # from pypogo.battle import compute_move_effect
+    rows = []
+    for move_name in mon.candidate_moveset()['charged']:
+        rows += pypogo.api.get_move_info(move_name)['pvp']
+
+    for row in rows:
+        stab = row['type'] in mon.typing
+        row['stab'] = stab
+    move_df = pd.DataFrame(rows)
+
+    # TODO: duplicated logic, rectify with pypogo.battle.compute_move_effect
+    # def modifier_factor(delta):
+    #     if delta > 0:
+    #         return 1 + (delta / 4)
+    #     else:
+    #         return 1 / (1 + (-delta / 4))
+    # attack_modifier_factor = modifier_factor(mon.modifiers['attack'])
+    # pvp_bonus_multiplier = 1.3  # Hard coded in game, See [3].
+    # attack_shadow_factor = 1.2 if mon.shadow else 1.0
+    # adjusted_attack = mon.adjusted['attack']
+    # charge = 1
+    # effectiveness = 1
+    stab = 1 + (move_df['stab'] * 0.2)
+    # half = 0.5  # not sure why a half is in the formula
+
+    move_df['stab_power'] = (
+        # half *
+        move_df['power'] *
+        # pvp_bonus_multiplier *
+        # charge *
+        # adjusted_attack *
+        # attack_modifier_factor *
+        # attack_shadow_factor *
+        # effectiveness
+        stab
+    )
+
+    move_df['energy_efficiency'] = move_df['stab_power'] / (-move_df['energy_delta'])
+    move_df = move_df.sort_values('energy_efficiency', ascending=False).reset_index(drop=True)
+    print(move_df)

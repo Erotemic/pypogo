@@ -1,2 +1,2 @@
 #!/bin/bash
-xdoctest pypogo --style=google all
+xdoctest pypogo --style=google all "$@"
