@@ -1,2 +1,31 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = [ "setuptools>=41.0.1",]
+
+[tool.mypy]
+ignore_missing_imports = true
+
+[tool.xcookie]
+tags = [ "github", "erotemic", "purepy",]
+mod_name = "pypogo"
+repo_name = "pypogo"
+rel_mod_parent_dpath = "."
+os = [ "win", "all", "linux", "osx",]
+min_python = 3.7
+version = "0.0.1"
+author = "joncrall"
+author_email = "jon.crall@kitware.com"
+description = "A module cut from xcookie"
+license = "Apache 2"
+dev_status = "planning"
+
+[tool.pytest.ini_options]
+addopts = "-p no:doctest --xdoctest --xdoctest-style=google --ignore-glob=setup.py --ignore-glob=dev"
+norecursedirs = ".git ignore build __pycache__ dev _skbuild"
+filterwarnings = [ "default", "ignore:.*No cfgstr given in Cacher constructor or call.*:Warning", "ignore:.*Define the __nice__ method for.*:Warning", "ignore:.*private pytest class or function.*:Warning",]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [ "pragma: no cover", ".*  # pragma: no cover", ".*  # nocover", "def __repr__", "raise AssertionError", "raise NotImplementedError", "if 0:", "if trace is not None", "verbose = .*", "^ *raise", "^ *pass *$", "if _debug:", "if __name__ == .__main__.:", ".*if six.PY2:",]
+omit = [ "pypogo/__main__.py", "*/setup.py",]

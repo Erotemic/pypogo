@@ -1,7 +1,7 @@
 pypogo - The Python Pokemon Go Module
 =====================================
 
-|CircleCI| 
+|GithubActions| 
 
 .. |Codecov| |Pypi| |Downloads| |ReadTheDocs|
 
@@ -128,3 +128,6 @@ min-maxing. Feel free to fork, contribute, or use as you'd like.
 
 .. |Codecov| image:: https://codecov.io/github/Erotemic/pypogo/badge.svg?branch=master&service=github
    :target: https://codecov.io/github/Erotemic/pypogo?branch=master
+
+.. |GithubActions| image:: https://github.com/Erotemic/pypogo/actions/workflows/tests.yml/badge.svg?branch=main
+    :target: https://github.com/Erotemic/pypogo/actions?query=branch%3Amain

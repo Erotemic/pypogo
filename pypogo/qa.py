@@ -1,3 +1,4 @@
+# flake8: noqa
 import ubelt as ub
 from pypogo.pokemon import Pokemon
 from pypogo.pogo_api import api
