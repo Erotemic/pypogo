@@ -3,7 +3,7 @@ pypogo - The Python Pokemon Go Module
 
 |GithubActions| 
 
-.. |Codecov| |Pypi| |Downloads| |ReadTheDocs|
+.... |Codecov| |Pypi| |Downloads| |ReadTheDocs|
 
 
 The ``pypogo`` module.
@@ -91,13 +91,12 @@ This module is being developed mainly for fun and personal use. Features as
 added as I need them to answer questions mostly to do with my own personal
 min-maxing. Feel free to fork, contribute, or use as you'd like.
 
-
 +------------------+----------------------------------------------+
-| Read the docs    | https://pypogo.readthedocs.io                 |
+| Read the docs    | https://pypogo.readthedocs.io                |
 +------------------+----------------------------------------------+
-| Github           | https://github.com/Erotemic/pypogo            |
+| Github           | https://github.com/Erotemic/pypogo           |
 +------------------+----------------------------------------------+
-| Pypi             | https://pypi.org/project/pypogo               |
+| Pypi             | https://pypi.org/project/pypogo              |
 +------------------+----------------------------------------------+
 
 
