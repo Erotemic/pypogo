@@ -15,3 +15,5 @@ pandas
 
 python-Levenshtein
 xdev
+
+sortedcontainers
