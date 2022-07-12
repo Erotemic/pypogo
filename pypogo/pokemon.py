@@ -77,7 +77,7 @@ class Pokemon(ub.NiceRepr):
     """
     def __init__(self, name, ivs=None, level=None, moves=None, shadow=False,
                  form=None, cp=None, autobuild=True, shiny=False,
-                 adjusted=None, hints=''):
+                 adjusted=None, purified=False, hints=''):
 
         self.api = global_api()
         self.hints = hints
@@ -89,10 +89,12 @@ class Pokemon(ub.NiceRepr):
         self.ivs = ivs
         self.moves = moves
         self.shadow = shadow
+        self.purified = purified  # or form.lower() == 'purified'
         self.shiny = shiny
 
-        if shadow:
-            form = 'Shadow'
+        # if shadow:
+        #     # form = 'Shadow'
+        #     pass
 
         self.form = form
         self.cp = cp
@@ -208,7 +210,7 @@ class Pokemon(ub.NiceRepr):
         elif self.form not in {'Normal', 'Shadow', 'Purified'}:
             aux_parts.append('{}'.format(self.form))
 
-        if self.form == 'Purified':
+        if self.purified:
             purified_glyph = glpyhs['purified']
             aux_parts.append(purified_glyph)
 
@@ -318,6 +320,7 @@ class Pokemon(ub.NiceRepr):
         """
         Example:
             >>> # xdoctest: +IGNORE_WANT
+            >>> from pypogo.pokemon import *  # NOQA
             >>> self = Pokemon('ralts', ivs=[6, 13, 15], level=20,
             >>>                 shadow=True, shiny=True)
             >>> new = self.purify()
@@ -339,7 +342,8 @@ class Pokemon(ub.NiceRepr):
         if self.ivs is not None:
             new_ivs = tuple([min(15, s + 2) for s in self.ivs])
             overwrite['ivs'] = new_ivs
-        overwrite['form'] = 'Purified'
+        # overwrite['form'] = 'Purified'
+        overwrite['purified'] = True
         overwrite['shadow'] = False
         # TODO: replace frustration with return
         new = self.copy(**overwrite)
@@ -430,6 +434,7 @@ class Pokemon(ub.NiceRepr):
             'form': self.form,
             'ivs': self.ivs,
             'shadow': self.shadow,
+            'purified': self.purified,
             'shiny': self.shiny,
         }
         for name in sorted(cc):

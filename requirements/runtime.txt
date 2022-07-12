@@ -10,4 +10,8 @@ numpy>=1.19.2    ; python_version < '3.9' and python_version >= '3.8'    # Pytho
 numpy>=1.19.2    ; python_version < '3.8' and python_version >= '3.7'    # Python 3.7
 numpy>=1.19.2    ; python_version < '3.7' and python_version >= '3.6'    # Python 3.6
 
-pandas>=1.4.0
+# pandas>=1.3.0
+pandas
+
+python-Levenshtein
+xdev

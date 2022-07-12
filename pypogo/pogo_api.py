@@ -143,6 +143,8 @@ class PogoAPI(ub.NiceRepr):
                     v = evo['pokemon_name'].lower()
                     evo_graph.add_edge(u, v)
 
+        api.shadow_names = [normalize(d['name']) for d in api.data['shadow_pokemon'].values()]
+
         api.name_to_family = {}
         api.name_to_base = {}
 
@@ -212,11 +214,10 @@ class PogoAPI(ub.NiceRepr):
         """
         hints_ = hints.lower()
         if name.endswith('-shadow'):
-            if form is None:
-                form = 'Shadow'
-            else:
-                assert form == 'Shadow', '{}, {}'.format(api, name)
-
+            # if form is None:
+            #     form = 'Shadow'
+            # else:
+            #     assert form == 'Shadow', '{}, {}'.format(api, name)
             name = name.split('-shadow')[0]
 
         if name.endswith('galarian'):
@@ -434,6 +435,9 @@ class PogoAPI(ub.NiceRepr):
         for info_type, all_infos in infos.items():
             part = None
             form_to_info = ub.group_items(all_infos, lambda _info: _info['form'].lower())
+
+            api.shadow_names
+
             if form_ in form_to_info:
                 parts = form_to_info[form_]
             else:
@@ -499,8 +503,8 @@ class PogoAPI(ub.NiceRepr):
 
 
 def suggest_spelling_correction(name, all_names, top=10):
-    import xdev
-    distances = xdev.edit_distance(name, all_names)
+    from xdev.algo import edit_distance
+    distances = edit_distance(name, all_names)
     idxs = ub.argsort(distances)[0:top]
     candidates = list(ub.take(all_names, idxs))
     print('did you mean on of: {}?'.format(ub.repr2(candidates, nl=1)))
