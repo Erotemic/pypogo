@@ -353,13 +353,13 @@ class Pokemon(ub.NiceRepr):
         """
         Example:
             >>> self = Pokemon('darmanitan')
-            >>> list(self.alternate_forms())
+            >>> print(list(self.alternate_forms()))
 
             >>> self = Pokemon('giratina')
-            >>> list(self.alternate_forms())
+            >>> print(list(self.alternate_forms()))
 
             >>> self = Pokemon('castform')
-            >>> list(self.alternate_forms())
+            >>> print(list(self.alternate_forms()))
         """
         forms = []
         for info in self.api.name_to_stats[self.name]:
@@ -1018,7 +1018,7 @@ class Pokemon(ub.NiceRepr):
         else:
             moves = list(self.moves)
 
-        if moves is None:
+        if moves is None or len(moves) == 0:
             cands = self.candidate_moveset()
             fast_name = rng.choice(cands['fast'])
             charged_names = rng.sample(cands['charged'], k=min(len(cands['charged']), 2))
@@ -1036,7 +1036,7 @@ class Pokemon(ub.NiceRepr):
                 charge_name = rng.choice(cands['charged'])
                 moves = moves + [charge_name]
             self.moves = moves
-        pass
+        return self
 
     def populate_move_stats(self):
         """
@@ -1066,6 +1066,9 @@ class Pokemon(ub.NiceRepr):
                 pvp_charge_cand.extend(move_info['pvp'])
             else:
                 raise KeyError
+
+        # Hack for plus moves, which seem to have their name normalized away?
+        pve_charge_cand = list(ub.unique(pve_charge_cand, key=lambda x: x['name']))
 
         if len(pve_fast_cand) != 1:
             raise Exception('MUST HAVE 1 FAST MOVE')
@@ -1420,6 +1423,8 @@ class Pokemon(ub.NiceRepr):
 
     def candidate_moveset(self, tmable=False):
         """
+        Args:
+            tmable (bool): if you need an ETM or not
 
         self = Pokemon.random('mew')
         print('self = {!r}'.format(self))

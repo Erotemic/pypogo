@@ -515,27 +515,6 @@ def move_chart():
     df = df.sort_values('dpe')
 
     rows = []
-    color_lut = {
-        #https://www.epidemicjohto.com/t882-type-colors-hex-colors
-        'Water': '#6390F0',
-        'Grass': '#7AC74C',
-        'Ghost': '#735797',
-        'Dragon': '#6F35FC',
-        'Dark': '#705746',
-        'Steel': '#B7B7CE',
-        'Ice': '#96D9D6',
-        'Fire': '#EE8130',
-        'Poison': '#A33EA1',
-        'Ground': '#E2BF65',
-        'Flying': '#A98FF3',
-        'Psychic': '#F95587',
-        'Bug': '#A6B91A',
-        'Rock': '#B6A136',
-        'Fighting': '#C22E28',
-        'Normal': '#A8A77A',
-        'Electric': '#F7D02C',
-        'Fairy': '#D685AD',
-    }
     # for ke, part in df.groupby(['power', 'energy_delta', 'dpe'], sort=0):
     groupers = ['dpe']
     groupers = ['power', 'energy_delta', 'dpe']
@@ -556,7 +535,7 @@ def move_chart():
                     prow['pname'] = '{:>20}'.format(prow['name'] + "↑" + str(prow['buff_value']))
                 elif prow['buff_value'] < 0:
                     prow['pname'] = '{:>20}'.format(prow['name'] + "↓" + str(prow['buff_value']))
-                color = color_lut.get(prow['type'], None)
+                color = api.type_colors.get(prow['type'], None)
                 if color is not None:
                     prow['cpname'] = Text(prow['pname'], style=color)
                 else:

@@ -179,6 +179,29 @@ class PogoAPI(ub.NiceRepr):
             lambda item: normalize(item['name'].lower()))
         api.pvp_fast_moves.default_factory = None
 
+        # Fairywind is a placeholder
+        # https://gamepress.gg/pokemongo/pokemon-move/fairy-wind
+        if 'fairy_wind' not in api.pve_fast_moves:
+            api.pve_fast_moves['fairy_wind'] = [{
+                'duration': 3000,
+                'move_id': None,
+                'power': 1,
+                'energy_delta': 100,
+                'stamina_loss_scaler': 0.01,
+                'name': 'Fairy Wind',
+                'type': 'Fairy'
+            }]
+
+        if 'fairy_wind' not in api.pvp_fast_moves:
+            api.pvp_fast_moves['fairy_wind'] = [{
+                'energy_delta': 1,
+                'move_id': None,
+                'power': 1,
+                'turn_duration': 1,
+                'name': 'Fairy Wind',
+                'type': 'Fairy'
+            }]
+
         api.pvp_charged_moves = ub.group_items(
             api.data['pvp_charged_moves'],
             lambda item: normalize(item['name'].lower()))
@@ -202,6 +225,28 @@ class PogoAPI(ub.NiceRepr):
                     'ROCK_SLIDE',
                 ]
             }
+        }
+
+        api.type_colors = {
+            #https://www.epidemicjohto.com/t882-type-colors-hex-colors
+            'Water': '#6390F0',
+            'Grass': '#7AC74C',
+            'Ghost': '#735797',
+            'Dragon': '#6F35FC',
+            'Dark': '#705746',
+            'Steel': '#B7B7CE',
+            'Ice': '#96D9D6',
+            'Fire': '#EE8130',
+            'Poison': '#A33EA1',
+            'Ground': '#E2BF65',
+            'Flying': '#A98FF3',
+            'Psychic': '#F95587',
+            'Bug': '#A6B91A',
+            'Rock': '#B6A136',
+            'Fighting': '#C22E28',
+            'Normal': '#A8A77A',
+            'Electric': '#F7D02C',
+            'Fairy': '#D685AD',
         }
 
     def normalize(api, x):
@@ -336,6 +381,8 @@ class PogoAPI(ub.NiceRepr):
             >>> from pypogo.pogo_api import *  # NOQA
             >>> api = PogoAPI()
             >>> move_name = 'super power'
+            >>> print(ub.repr2(api.get_move_info(move_name)))
+            >>> move_name = 'struggle'
             >>> print(ub.repr2(api.get_move_info(move_name)))
 
             # with pytest.raises
