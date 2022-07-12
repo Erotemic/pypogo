@@ -187,18 +187,18 @@ toggle_setx_enter(){
     else
         __context_1_toggle_setx=0
     fi
-    if [[ "$__context_1_toggle_setx" == "1" ]]; then
-        echo "Setx was on, disable temporarilly"
-        set +x
-    fi
+    #if [[ "$__context_1_toggle_setx" == "1" ]]; then
+    #    echo "Setx was on, disable temporarilly"
+    #    set +x
+    #fi
 }
 
 toggle_setx_exit(){
     echo "Exit sensitive area"
-    # Can we guarentee this will happen?
-    if [[ "$__context_1_toggle_setx" == "1" ]]; then
-        set -x
-    fi
+    ## Can we guarentee this will happen?
+    #if [[ "$__context_1_toggle_setx" == "1" ]]; then
+    #    set -x
+    #fi
 }
 
 
