@@ -1,9 +1,7 @@
 pypogo - The Python Pokemon Go Module
 =====================================
 
-|GithubActions| 
-
-.. .. |Codecov| |Pypi| |Downloads| |ReadTheDocs|
+|GithubActions| |Codecov| |Pypi| |Downloads| |ReadTheDocs|
 
 
 The ``pypogo`` module.
