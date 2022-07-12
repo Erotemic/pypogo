@@ -1131,6 +1131,7 @@ class Pokemon(ub.NiceRepr):
             >>> row_line = 'victreebel_shadow-shadow,RAZOR_LEAF,LEAF_BLADE,FRUSTRATION,22.5,4,14,14'
             >>> row = row_line.split(',')
             >>> self = Pokemon.from_pvpoke_row(row)
+            >>> print(f'self={self}')
         """
         name = row[0]
         shadow = False

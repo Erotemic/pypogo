@@ -374,10 +374,18 @@ class Trainer(Actor):
 
     @classmethod
     def random(cls):
-        pokemon = [
-            Pokemon.random(level=1).maximize(1500)
-            for _ in range(3)
-        ]
+        pokemon = []
+        while len(pokemon) < 3:
+            try:
+                mon = Pokemon.random(level=1).maximize(1500)
+            except Exception:
+                # Some mon will break beause they arent allowed in pvp
+                # Just roll until we get a good one
+                continue
+            # Cant use the same one twice
+            if mon.name in [p.name for p in pokemon]:
+                continue
+            pokemon.append(mon)
         self = cls(pokemon)
         return self
 
