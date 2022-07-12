@@ -89,12 +89,17 @@ class PogoAPI(ub.NiceRepr):
         }
 
         # TODO: determine when to redownload
+        cache_dpath_root = ub.Path.appdir('pypogo/pogoapi').ensuredir()
+        # Keep backups of the API every month
+        today = ub.timeparse(ub.timestamp()).date()
+        month_stamp = today.replace(day=1)
+        cache_dpath = (cache_dpath_root / month_stamp.isoformat()).ensuredir()
 
         api.data = {}
         for key, url in api.routes.items():
-
             redo = 0
-            data_fpath = ub.grabdata(url, verbose=1, redo=redo, expires=24 * 60 * 60)
+            data_fpath = ub.grabdata(
+                url, dpath=cache_dpath, verbose=1, redo=redo, expires=24 * 60 * 60)
 
             with open(data_fpath, 'r') as file:
                 data = json.load(file)
