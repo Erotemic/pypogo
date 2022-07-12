@@ -95,18 +95,18 @@ jobs:
     strategy:
       matrix:
         os:
-        - windows-latest
+        #- windows-latest
         - ubuntu-latest
-        - macOS-latest
+        #- macOS-latest
         python-version:
         - '3.7'
         - '3.8'
         - '3.9'
         - '3.10'
-        - pypy-3.7
+        #- pypy-3.7
         install-extras:
         - tests
-        - tests,optional
+        #- tests,optional
         arch:
         - auto
         include:
