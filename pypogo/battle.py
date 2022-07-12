@@ -186,6 +186,7 @@ class BattleZone(Environment):
             xdoctest -m pypogo.battle BattleZone.run
 
         Example:
+            >>> # xdoctest: +SKIP
             >>> from pypogo.battle import *  # NOQA
             >>> self = BattleZone.random()
             >>> mon1 = self.players[0].pokemon[0] = Pokemon.random('articuno', moves=['Ice Shard', 'Icy Wind', 'Hurricane']).maximize(2500)

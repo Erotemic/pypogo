@@ -317,6 +317,7 @@ class Pokemon(ub.NiceRepr):
     def purify(self):
         """
         Example:
+            >>> # xdoctest: +IGNORE_WANT
             >>> self = Pokemon('ralts', ivs=[6, 13, 15], level=20,
             >>>                 shadow=True, shiny=True)
             >>> new = self.purify()
