@@ -686,15 +686,56 @@ class Pokemon(ub.NiceRepr):
 
         return self
 
-    def league_ranking_table(self, max_cp=1500, max_level=51, min_iv=0):
+    def league_ranking_table(self, max_cp=1500, max_level=51, min_iv=0,
+                             attack_breakpoints=None, defense_breakpoints=None,
+                             stamina_breakpoints=None, priority_constraints='auto'):
         """
         Calculate this Pokemon species' league rankings for all IV
         combinations, based on the adjusted stat product heuristic.
 
-        Ignore:
+        Args:
+
+            max_cp (int): constraint on the maximum CP of the pokemon (e.g. 1500
+                for great league)
+
+            max_level (int):
+                constraint on the maximum level of the pokemon.
+                e.g. 40 for no XL no best buddies.
+                50 for XL no best buddy.  51 for XL and best buddy.
+
+            min_iv (int):
+                Certain pokemon cannot have an iv stat lower than some value. E.g.
+                for trading [TradeMinIVs]_, hatching (10), purified (2).
+
+            attack_breakpoints (None | float | List[float]):
+                One or more attack breakpoints we would like to satisfy.
+                The "bpa" column will state how many of these breakpoints
+                the pokemon satisfies.
+
+            defense_breakpoints (None | float | List[float]):
+                One or more attack breakpoints we would like to satisfy
+                The "bpd" column will state how many of these breakpoints
+                the pokemon satisfies.
+
+            stamina_breakpoints (None | float | List[float]):
+                One or more attack breakpoints we would like to satisfy
+                The "bps" column will state how many of these breakpoints
+                the pokemon satisfies.
+
+            priority_constraints (str | List[str]):
+                An expression indicating what you want to prioritize.
+
+                If auto, then all breakpoints must be satisfied.
+
+                If given as a list, then we consider the priorities in "tiers". IVs
+                that hit all tier 0 criteria are better than everything in teir 1,
+                and so forth.
+
+        Example:
+            >>> from pypogo.pokemon import *  # NOQA
             >>> self = Pokemon('beedrill')
             >>> beedrill_df = self.league_ranking_table(max_cp=1500)
-            >>> print(beedrill_df)
+            >>> print(beedrill_df)  # xdoctest: +IGNORE_WANT
                   iva  ivd  ivs    cp  level      attack     defense  stamina  stat_product_k  rank     percent
             rank
             1       0   13   14  1499   32.5  126.206025  106.789714      132     1779.030702     1  100.000000
@@ -711,215 +752,74 @@ class Pokemon(ub.NiceRepr):
             ...
             [4096 rows x 11 columns]
 
-        Ignore:
-            >>> self = Pokemon('beedrill')
-            >>> beedrill_df = self.league_ranking_table(max_cp=1500)
+        References:
+            ..[TradeMinIVs] https://thesilphroad.com/science/examining-the-ivs-of-trades
+            ..[GoonIVDeepDive] https://gamepress.gg/pokemongo/obstagoon-pvp-iv-deep-dive
 
-            >>> # Find the best IVs that we have for PVP
-            >>> self = Pokemon('empoleon')
-            >>> have_ivs = [
-            >>>     (0, 10, 14),
-            >>>     (1, 11, 5),
-            >>>     (1, 5, 7),
-            >>>     (1, 9, 13),
-            >>>     (2, 15, 13),
-            >>>     (2, 2, 10),
-            >>>     (2, 6, 9),
-            >>>     (3, 13, 11),
-            >>>     (3, 3, 2),
-            >>>     (4, 13, 13),
-            >>>     (5, 13, 14),
-            >>>     (4, 14, 14),
-            >>>     (7, 13, 3),
-            >>>     (13, 14, 14),
-            >>>     (15, 14, 14),
+        Example:
+            This example demonstrates the non-trivial ranking table for Obstagoon,
+            which depends on a specific set of breakpoints [GoonIVDeepDive]_. In
+            Ultra league there are two specific attack breakpoints we want to hit
+            as well as a stamina breakpoint. There is also a defense point we care
+            about, but are willing to live without. Note that this is not an
+            absolute ranking table. We are deciding what we want to prioritize.
+            But given our set of priorities there are ivs that objectively meet
+            them better, and this is what we compute.
+
+            >>> from pypogo.pokemon import _make_rank_table, _coerce_max_cp
+            >>> import pypogo
+            >>> self = pypogo.Pokemon('obstagoon')
+            >>> rules = dict(
+            >>>    max_cp=2500,
+            >>>    min_iv=0,
+            >>>    max_level=51,
+            >>> )
+            >>> breakpoints = dict(
+            >>>    attack_breakpoints=[147.89, 146.95],
+            >>>    defense_breakpoints=[166, 163.8],
+            >>>    stamina_breakpoints=[172],
+            >>> )
+            >>> priority_constraints = [
+            >>>     '(bpa >= 2) & (bps >= 1) & (bpd >= 1)',
+            >>>     '(bpa >= 1) & (bps >= 1) & (bpd >= 1)',
+            >>>     '(bpa >= 1) & (bps >= 1)',
+            >>>     '(bpa >= 1)',
             >>> ]
-
-            >>> self = Pokemon('beedrill')
-            >>> have_ivs = [
-            >>>     (0, 8, 14),
-            >>>     (0, 12, 14),
-            >>>     (1,  3, 10),
-            >>>     (1, 13, 6),
-            >>>     (4, 11, 13),
-            >>>     (4, 14, 13),
-            >>>     (1, 13, 7),
-            >>>     (1, 10, 8),
-            >>>     (4, 13, 13),
-            >>>     (4, 14, 14),
-            >>>     (4, 15, 12),
-            >>>     (5, 14, 11),
-            >>>     (11, 15, 14),
-            >>>     (15, 15, 15),
-            >>>     (12, 15, 15),
+            >>> priority_constraints2 = [
+            >>>     '(bpa * 1.4) + (bps * 1.2) + (bpd * 100)',
             >>> ]
-            >>> self.league_ranking(have_ivs=have_ivs)
-
-            >>> have_ivs = [
-            >>>     (4, 13, 10),
-            >>>     (5, 11, 14),
-            >>>     (4, 13, 11),
-            >>>     (6, 13, 15),
-            >>>     (7, 12, 13),
-            >>>     (7, 14, 14),
-            >>>     (7, 15, 15),
-            >>>     (7, 2, 9),
-            >>>     (10, 15, 11),
-            >>>     (15, 15, 15),
-            >>>     (7, 15, 15),
-            >>> ]
-            >>> self = Pokemon('gengar')
-            >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
-            >>> self.league_ranking(have_ivs=have_ivs)
-
-            >>> self = Pokemon('haunter')
-            >>> print('self.info = {}'.format(ub.repr2(self.info, nl=2)))
-            >>> self.league_ranking(have_ivs=have_ivs)
-
-            >>> have_ivs = [
-            >>>     (12, 11, 14),
-            >>>     (12, 15, 15),
-            >>>     (15, 15, 15),
-            >>> ]
-            >>> Pokemon('blaziken').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('blaziken').league_ranking(have_ivs=have_ivs, max_cp=2500)
-            >>> Pokemon('blaziken').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
-
-            >>> have_ivs = [
-            >>>     (0, 2, 14),
-            >>>     (4, 2, 13),
-            >>>     (11, 13, 12),
-            >>>     (4, 13, 9),
-            >>>     (15, 12, 13),
-            >>>     (13, 14, 13),
-            >>>     (13, 14, 13),
-            >>>     (14, 14, 10),
-            >>>     (6, 15, 11),  # purified
-            >>>     (13, 15, 14),  # purified
-            >>> ]
-            >>> Pokemon('swampert').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('swampert').league_ranking(have_ivs=have_ivs, max_cp=2500)
-            >>> Pokemon('swampert').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
-
-            >>> have_ivs = [
-            >>>     (1, 2, 15),
-            >>>     (12, 15, 14),
-            >>>     (14, 15, 14),
-            >>>     (14, 14, 14),
-            >>>     (14, 13, 15),
-            >>>     (15, 15, 10),
-            >>> ]
-            >>> Pokemon('sceptile').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('sceptile').league_ranking(have_ivs=have_ivs, max_cp=2500)
-
-            >>> have_ivs = [
-            >>>     (14, 14, 15),
-            >>>     (10, 14, 15),
-            >>>     (15, 15, 15),
-            >>>     (15, 15, 15),
-            >>> ]
-            >>> Pokemon('rhyperior').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
-
-            >>> have_ivs = [
-            >>>     (14, 14, 14),
-            >>>     (12, 13, 14),
-            >>>     (13, 14, 14),
-            >>>     (15, 13, 14),
-            >>>     (8, 6, 8),
-            >>> ]
-            >>> Pokemon('vigoroth').league_ranking(have_ivs=have_ivs, max_cp=1500)
-
-
-            >>> have_ivs = [
-            >>>     (6, 15, 13),
-            >>>     (3, 4, 14),
-            >>>     (2, 9, 15),
-            >>>     (6, 14, 15),
-            >>>     (7, 15, 15),
-            >>>     (10, 15, 15),
-            >>> ]
-            >>> Pokemon('shiftry').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('shiftry').league_ranking(have_ivs=have_ivs, max_cp=2500)
-
-            >>> have_ivs = [
-            >>>     (15, 15, 14),
-            >>>     (0, 7, 8),
-            >>>     (3, 12, 14),
-            >>>     (5, 5, 15),
-            >>>     (4, 7, 12),
-            >>>     (15, 14, 14),
-            >>>     (10, 14, 15),
-            >>> ]
-            >>> Pokemon('alakazam').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('alakazam').league_ranking(have_ivs=have_ivs, max_cp=2500)
-
-            >>> have_ivs = [
-            >>>     (0, 15, 6),
-            >>>     (11, 10, 10),
-            >>>     (12, 12, 11),
-            >>>     (15, 10, 12),
-            >>> ]
-            >>> Pokemon('salamence').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('salamence').league_ranking(have_ivs=have_ivs, max_cp=2500)
-            >>> Pokemon('salamence').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
-
-            >>> have_ivs = [
-            >>>     (6, 10, 10),
-            >>>     (11, 9, 14),
-            >>>     (13, 12, 14),
-            >>>     (15, 15, 15),
-            >>>     (15, 15, 5),
-            >>> ]
-            >>> Pokemon('flygon').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('flygon').league_ranking(have_ivs=have_ivs, max_cp=2500)
-            >>> Pokemon('flygon').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
-
-            >>> have_ivs = [
-            >>>     (6, 11, 11),
-            >>>     (10, 11, 10),
-            >>>     (10, 11, 12),
-            >>>     (6, 14, 4),
-            >>>     (15, 12, 15),
-            >>>     (15, 7, 15),
-            >>> ]
-            >>> Pokemon('mamoswine').league_ranking(have_ivs=have_ivs, max_cp=1500)
-            >>> Pokemon('mamoswine').league_ranking(have_ivs=have_ivs, max_cp=2500)
-            >>> Pokemon('mamoswine').league_ranking(have_ivs=have_ivs, max_cp=np.inf)
-
-            >>> pd.options.display.max_rows = 100
-            >>> pd.options.display.min_rows = 40
-            >>> Pokemon('registeel').league_ranking_table(max_cp=1500, min_iv=10, max_level=40)
-            >>> Pokemon('registeel').league_ranking_table(max_cp=2500, min_iv=10, max_level=40)
-            >>> have_ivs = [
-            >>>     (10, 14, 15),
-            >>>     (14, 14, 12),
-            >>>     (13, 11, 15),
-            >>>     (12, 15, 15),
-            >>>     (13, 10, 15),
-            >>>     (14, 10, 12),
-            >>>     (14, 13, 10),
-            >>>     (12, 11, 15),
-            >>>     (11, 13, 15),
-            >>>     (12, 15, 10),
-            >>>     (11, 10, 14),
-            >>>     (11, 13, 11),
-            >>>     (13, 15, 10),
-            >>>     (15, 15, 11),
-            >>> ]
-            >>> _ = Pokemon('registeel').league_ranking(have_ivs=have_ivs, max_cp=1500, min_iv=10, max_level=51)
-            >>> _ = Pokemon('registeel').league_ranking(have_ivs=have_ivs, max_cp=2500, min_iv=10, max_level=51)
-
+            >>> # Different contraints can give different results
+            >>> df1 = self.league_ranking_table(**rules)
+            >>> df2 = self.league_ranking_table(**rules, **breakpoints)
+            >>> df3 = self.league_ranking_table(**rules, **breakpoints, priority_constraints=priority_constraints)
+            >>> df4 = self.league_ranking_table(**rules, **breakpoints, priority_constraints=priority_constraints2)
+            >>> # xdoctest: +IGNORE_WANT
+            >>> print(df1.iloc[0:3])
+            >>> print(df2.iloc[0:3])
+            >>> print(df3.iloc[0:3])
+            >>> print(df4.iloc[0:3])
         """
         base_attack = self.info['base_attack']
         base_defense = self.info['base_defense']
         base_stamina = self.info['base_stamina']
         max_cp = _coerce_max_cp(max_cp)
-
-        df = _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp, min_iv)
+        func = _make_rank_table
+        # func = _memo_rank_table
+        df = func(
+            base_attack=base_attack,
+            base_defense=base_defense,
+            base_stamina=base_stamina,
+            max_level=max_level,
+            max_cp=max_cp,
+            min_iv=min_iv,
+            attack_breakpoints=attack_breakpoints,
+            defense_breakpoints=defense_breakpoints,
+            stamina_breakpoints=stamina_breakpoints,
+            priority_constraints=priority_constraints)
         return df
 
     @classmethod
-    def random(Pokemon, name=None, level=None, ivs=None, moves=None, form=None, shadow=None, rng=None):
+    def random(Pokemon, name=None, level=None, ivs=None, moves=None, form=None, shadow=None, rng=None, shiny=False):
         """
         Example:
             >>> from pypogo.pokemon import *  # NOQA
@@ -969,7 +869,7 @@ class Pokemon(ub.NiceRepr):
             valid_names = list(api.name_to_base)
             name = rng.choice(valid_names)
 
-        self = Pokemon(name, form=form, shadow=shadow)
+        self = Pokemon(name, form=form, shadow=shadow, shiny=shiny)
 
         max_level = 51
         if level is None:
@@ -1548,8 +1448,101 @@ def calc_cp(attack, defense, stamina, level):
 #     pass
 
 
-@ub.memoize
-def _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp, min_iv):
+def _make_rank_table(base_attack, base_defense, base_stamina, max_cp,
+                     max_level=51, min_iv=0, attack_breakpoints=None,
+                     defense_breakpoints=None, stamina_breakpoints=None,
+                     priority_constraints='sum'):
+    """
+    Construct the PVP ranking table.
+
+    Args:
+        base_attack (float): pokemon base attack stat
+
+        base_defense (float): pokemon base defense stat
+
+        base_stamina (float): pokemon base stamina stat
+
+        max_cp (int): constraint on the maximum CP of the pokemon (e.g. 1500
+            for great league)
+
+        max_level (int):
+            constraint on the maximum level of the pokemon.
+            e.g. 40 for no XL no best buddies.
+            50 for XL no best buddy.  51 for XL and best buddy.
+
+        min_iv (int):
+            Certain pokemon cannot have an iv stat lower than some value. E.g.
+            for trading [TradeMinIVs]_, hatching (10), purified (2).
+
+        attack_breakpoints (None | float | List[float]):
+            One or more attack breakpoints we would like to satisfy.
+            The "bpa" column will state how many of these breakpoints
+            the pokemon satisfies.
+
+        defense_breakpoints (None | float | List[float]):
+            One or more attack breakpoints we would like to satisfy
+            The "bpd" column will state how many of these breakpoints
+            the pokemon satisfies.
+
+        stamina_breakpoints (None | float | List[float]):
+            One or more attack breakpoints we would like to satisfy
+            The "bps" column will state how many of these breakpoints
+            the pokemon satisfies.
+
+        priority_constraints (str | List[str]):
+            An expression indicating what you want to prioritize.
+
+            If auto, then all breakpoints must be satisfied.
+            If sum then uses they count as votes
+
+            If given as a list, then we consider the priorities in "tiers". IVs
+            that hit all tier 0 criteria are better than everything in teir 1,
+            and so forth.
+
+    References:
+        ..[TradeMinIVs] https://thesilphroad.com/science/examining-the-ivs-of-trades
+        ..[GoonIVDeepDive] https://gamepress.gg/pokemongo/obstagoon-pvp-iv-deep-dive
+
+    Example:
+        This example demonstrates the non-trivial ranking table for Obstagoon,
+        which depends on a specific set of breakpoints [GoonIVDeepDive]_. In
+        Ultra league there are two specific attack breakpoints we want to hit
+        as well as a stamina breakpoint. There is also a defense point we care
+        about, but are willing to live without. Note that this is not an
+        absolute ranking table. We are deciding what we want to prioritize.
+        But given our set of priorities there are ivs that objectively meet
+        them better, and this is what we compute.
+
+        >>> from pypogo.pokemon import _make_rank_table, _coerce_max_cp
+        >>> import pypogo
+        >>> self = pypogo.Pokemon('obstagoon')
+        >>> base_attack = self.info['base_attack']
+        >>> base_defense = self.info['base_defense']
+        >>> base_stamina = self.info['base_stamina']
+        >>> max_cp = 2500
+        >>> min_iv = 0
+        >>> max_level = 51
+        >>> attack_breakpoints = [147.89, 146.95]
+        >>> stamina_breakpoints = [172]
+        >>> defense_breakpoints = [163.8]
+        >>> breakpoint_priority=['attack', 'stamina', 'defense'],
+        >>> breakpoints = dict(
+        >>>    attack_breakpoints=attack_breakpoints,
+        >>>    defense_breakpoints=defense_breakpoints,
+        >>>    stamina_breakpoints=stamina_breakpoints
+        >>> )
+        >>> priority_constraints = [
+        >>>     '(bpa >= 2) & (bps >= 1) & (bpd >= 1)',
+        >>>     '(bpa >= 1) & (bps >= 1) & (bpd >= 1)',
+        >>>     '(bpa >= 1) & (bps >= 1)',
+        >>>     '(bpa >= 1)',
+        >>> ]
+        >>> #priority_constraints = 'sum'
+        >>> df = _make_rank_table(base_attack, base_defense, base_stamina,
+        >>>                       max_level=max_level, max_cp=max_cp,
+        >>>                       min_iv=min_iv, **breakpoints)
+        >>> print(df)
+    """
     rows = []
     iva_range = list(range(min_iv, 16))
     ivd_range = list(range(min_iv, 16))
@@ -1584,15 +1577,56 @@ def _memo_rank_table(base_attack, base_defense, base_stamina, max_level, max_cp,
         }
         rows.append(row)
 
+    _breakpoints = ub.udict({
+        'attack': attack_breakpoints or [],
+        'stamina': stamina_breakpoints or [],
+        'defense': defense_breakpoints or [],
+    })
+
     df = pd.DataFrame.from_dict(rows)
     df['stat_product_k'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
-    df = df.sort_values('stat_product_k', ascending=False)
+    print('_breakpoints = {}'.format(ub.repr2(_breakpoints, nl=1)))
+    for statkey, statvals in _breakpoints.items():
+        col = f'bp{statkey[0]}'
+        df[col] = 0
+        for val in statvals:
+            df[col] += df[statkey] >= val
+
+    df['priority'] = 0
+
+    eval_constraints = priority_constraints
+    if isinstance(priority_constraints, str):
+        if priority_constraints == 'sum':
+            # df['priority'] = df['bpd'] + df['bps'] + df['bpa']
+            eval_constraints = ['bpa + bpd + bps']
+        elif priority_constraints == 'auto':
+            # stat_to_num_bp = _breakpoints.map_values(len)
+            # auto_parts = [
+            #     f'(bp{statkey[0]} >= {num_bp})'
+            #     for statkey, num_bp in stat_to_num_bp.items()
+            # ]
+            # query = ' & '.join(auto_parts)
+            # eval_constraints = [query]
+            eval_constraints = ['bpa + bpd + bps']
+        else:
+            eval_constraints = [priority_constraints]
+
+    if eval_constraints is not None:
+        for level_, tier_query in enumerate(eval_constraints[::-1], start=1):
+            flags = df.eval(tier_query)
+            df['priority'] += flags
+
+    df = df.sort_values(['priority', 'stat_product_k'], ascending=False)
+
     df['rank'] = np.arange(1, len(df) + 1)
     df = df.set_index('rank', drop=False)
     min_ = df['stat_product_k'].min()
     max_ = df['stat_product_k'].max()
     df['percent'] = ((df['stat_product_k'] - min_) / (max_ - min_)) * 100
     return df
+
+
+_memo_rank_table = ub.memoize(_make_rank_table)
 
 
 def _coerce_max_cp(max_cp):

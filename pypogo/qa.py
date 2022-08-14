@@ -2253,3 +2253,97 @@ def moveset_analysis(mon):
     move_df['energy_efficiency'] = move_df['stab_power'] / (-move_df['energy_delta'])
     move_df = move_df.sort_values('energy_efficiency', ascending=False).reset_index(drop=True)
     print(move_df)
+
+
+
+def goons():
+    import pypogo
+    # mon = pypogo.Pokemon.random('registeel', moves=['lock on', 'flash cannon', 'focus blast'])
+
+    base = mon = pypogo.Pokemon.random('obstagoon', form='galarian', moves=['counter', 'night slash', 'cross chop'], shiny=True)
+
+    # Adjust table for breakpoints
+    ultra_breakpoints = {
+        'attack_breakpoints': [147.89, 146.95],
+        'stamina_breakpoints': [172],
+        'defense_breakpoints': [163.8],
+    }
+    great_breakpoints = {
+        'attack_breakpoints': [115],
+        'defense_breakpoints': [123.23],
+        'stamina_breakpoints': [135],
+    }
+    ultra_ranks = mon.league_ranking_table(2500, **ultra_breakpoints)
+    great_ranks = mon.league_ranking_table(1500, **great_breakpoints)
+    print(ultra_ranks.iloc[0:20].to_string())
+    print(great_ranks.iloc[0:20].to_string())
+
+    # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
+    #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
+    #https://pvpivs.com/?mon=Obstagoon&r=61&mA=115&mD=123.23&mHP=135&dec=2
+    df = ultra_ranks
+    optimal_spreads_ultra = list(map(tuple, df[['iva', 'ivd', 'ivs']].values.tolist()))
+    df = great_ranks
+    optimal_spreads_great = list(map(tuple, df[['iva', 'ivd', 'ivs']].values.tolist()))
+
+    shiney_have_ivs = [tuple([int(x) for x in p.strip().split(' ') if x]) for p in ub.codeblock(
+        '''
+        3 14 0
+        8 8 8
+        4 15 11
+        11 8 14
+        7 13 13
+        0 8 4
+        9 0 6
+        14 14 10
+        0 5 14
+        14 0 15
+        6 10 8
+        2 6 0
+        9 13 4
+        15 14 15
+        1 8 1
+        6 8 5
+        1 9 4
+        15 10 14
+        0 6 7
+        5 14 1
+        6 7 6
+        0 0 11
+        0 6 6
+        ''').split('\n')]
+
+    have_ivs = shiney_have_ivs
+
+    ultra_candidates = ultra_ranks.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank')
+    great_candidates = great_ranks.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank')
+    print('Ultra Candidates')
+    print(ultra_candidates)
+    print('Great Candidates')
+    print(great_candidates)
+
+    # have_ivs = [tuple([int(x) for x in p.strip().split(' ') if x]) for p in ub.codeblock(
+    #     '''
+    #     ''').split('\n')]
+
+    # have_ivs = [tuple([int(x) for x in p.strip().split(' ') if x]) for p in ub.codeblock(
+    #     '''
+    #     6 7 3
+    #     2 7 6
+    #     11 5 5
+    #     2 11 1
+    #     12 8 15
+    #     7 10 5
+    #     10 1 10
+    #     14 7 7
+    #     2 2 11
+    #     7 11 11
+    #     6 0 0
+    #     11 10 15
+    #     0 12 11
+    #     0 2 8
+    #     5 15 7
+    #     4 2 12
+    #     3 14 1
+    #     2 13 6
+    #     ''').split('\n')]
