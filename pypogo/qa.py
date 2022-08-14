@@ -2314,7 +2314,6 @@ def goons():
         ''').split('\n')]
 
     have_ivs = shiney_have_ivs
-
     ultra_candidates = ultra_ranks.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank')
     great_candidates = great_ranks.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank')
     print('Ultra Candidates')

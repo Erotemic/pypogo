@@ -1585,7 +1585,6 @@ def _make_rank_table(base_attack, base_defense, base_stamina, max_cp,
 
     df = pd.DataFrame.from_dict(rows)
     df['stat_product_k'] = (df['attack'] * df['defense'] * df['stamina']) / 1000
-    print('_breakpoints = {}'.format(ub.repr2(_breakpoints, nl=1)))
     for statkey, statvals in _breakpoints.items():
         col = f'bp{statkey[0]}'
         df[col] = 0
