@@ -399,6 +399,24 @@ class Pokemon(ub.NiceRepr):
             prev = self.api.evo_graph.pred[name]
         return stage
 
+    def summary(self):
+        """
+        Generic information about a pokemon species
+
+        Example:
+            >>> import pypogo
+            >>> self = pypogo.Pokemon('buzzwole')
+            >>> print('self.info = {}'.format(ub.repr2(self.summary(), nl=2, sort=0)))
+        """
+        info = {
+            'name': self.name,
+            'typing': self.typing,
+            'base_stats': self.base_stats,
+            'moveset': self.candidate_moveset(),
+            'family': list(self.family())
+        }
+        return info
+
     def family(self, ancestors=True, node=False, onlyadj=False):
         """
         Get other members of this pokemon family

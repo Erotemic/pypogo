@@ -833,6 +833,19 @@ def acquisition_rank_breakdown(mon, max_cp, max_levels=[51, 50, 40],
     """
     max_levels=[51, 50, 40]
     methods=['wild', 'encounter', 'lucky']
+
+    Example:
+        >>> import pypogo
+        >>> from pypogo.qa import *  # NOQA
+        >>> mon = pypogo.Pokemon('buzzwole')
+        >>> tables = acquisition_rank_breakdown(mon, 2500, max_levels=[40], methods=['wild', 'trade', 'encounter'])
+        >>> table = tables['encounter_40']
+        >>> print(table.iloc[0:100].to_string())
+        >>> tables = acquisition_rank_breakdown(mon, 1500, max_levels=[40], methods=['wild', 'trade', 'encounter'])
+        >>> table = tables['encounter_40']
+        >>> print(table.iloc[0:100].to_string())
+
+
     """
     print('\n\n!!!-----------')
     print('max_cp = {!r}'.format(max_cp))
@@ -2268,23 +2281,28 @@ def goons():
         'stamina_breakpoints': [172],
         'defense_breakpoints': [163.8],
     }
+    ultra_priority_constraints = [
+        '(bpa >= 2) & (bps >= 1) & (bpd >= 1)',
+        '(bpa >= 1) & (bps >= 1) & (bpd >= 1)',
+        '(bpa >= 1) & (bps >= 1)',
+        '(bpa >= 1)',
+    ]
     great_breakpoints = {
         'attack_breakpoints': [115],
         'defense_breakpoints': [123.23],
         'stamina_breakpoints': [135],
     }
-    ultra_ranks = mon.league_ranking_table(2500, **ultra_breakpoints)
-    great_ranks = mon.league_ranking_table(1500, **great_breakpoints)
-    print(ultra_ranks.iloc[0:20].to_string())
-    print(great_ranks.iloc[0:20].to_string())
+    ranks = {}
+    ranks['ultra_atk'] = mon.league_ranking_table(2500, priority_constraints=ultra_priority_constraints, **ultra_breakpoints)
+    ranks['great_atk'] = mon.league_ranking_table(1500, **great_breakpoints)
+    ranks['ultra_bulk'] = mon.league_ranking_table(2500)
+    ranks['great_bulk'] = mon.league_ranking_table(1500)
+    print(ranks['ultra_atk'].iloc[0:20].to_string())
+    print(ranks['great_atk'].iloc[0:20].to_string())
 
     # https://gamepress.gg/pokemongo/deoxys-defense-pvp-iv-deep-dive-analysis
     #https://www.reddit.com/r/TheSilphRoad/comments/oc6wtn/deoxys_defense_pvp_iv_deep_dive_analysis/h3tc4jq/?context=3
     #https://pvpivs.com/?mon=Obstagoon&r=61&mA=115&mD=123.23&mHP=135&dec=2
-    df = ultra_ranks
-    optimal_spreads_ultra = list(map(tuple, df[['iva', 'ivd', 'ivs']].values.tolist()))
-    df = great_ranks
-    optimal_spreads_great = list(map(tuple, df[['iva', 'ivd', 'ivs']].values.tolist()))
 
     shiney_have_ivs = [tuple([int(x) for x in p.strip().split(' ') if x]) for p in ub.codeblock(
         '''
@@ -2312,14 +2330,69 @@ def goons():
         0 0 11
         0 6 6
         ''').split('\n')]
-
     have_ivs = shiney_have_ivs
-    ultra_candidates = ultra_ranks.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank')
-    great_candidates = great_ranks.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank')
+
+    have_ivs = [tuple([int(x) for x in p.strip().split(' ') if x]) for p in ub.codeblock(
+        '''
+        8 9 9
+        7 6 6
+        8 8 8
+        0 10 15
+        2 12 15
+        4 13 15
+        1 11 2
+        6 4 6
+        2 2 3
+        3 10 5
+        13 15 15
+        0 3 15
+        2 1 1
+        6 4 4
+        4 14 1
+        10 10 9
+        4 12 4
+        6 13 14
+        11 10 13
+        0 7 12
+        2 14 11
+        15 15 9
+        0 12 11
+        1 11 12
+        3 13 3
+        2 14 2
+        12 15 13
+        1 15 12
+        6 11 12
+        14 14 15
+        0 9 9
+        12 15 13
+        9 15 15
+        7 11 12
+        10 11 15
+        15 15 15
+        ''').split('\n')] + shiney_have_ivs
+
+    have_ivs = sorted(set(have_ivs))
+
+    candidates = {k: v.set_index(['iva', 'ivd', 'ivs']).loc[have_ivs].sort_values('rank') for k, v in ranks.items()}
+
     print('Ultra Candidates')
-    print(ultra_candidates)
+    print(candidates['ultra_atk'])
     print('Great Candidates')
-    print(great_candidates)
+    print(candidates['great_atk'])
+
+    tostack = [
+        v[['rank']].rename({'rank': k + '_rank'}, axis=1)
+        for k, v in ranks.items()
+    ]
+    import pandas as pd
+    have_summary = pd.concat(tostack, axis=1)
+
+    have_summary['min_rank'] = have_summary.min(axis=1)
+    have_summary['max_rank'] = have_summary.max(axis=1)
+
+    keeplist = have_summary.sort_values(['min_rank'])
+    print(keeplist.to_string())
 
     # have_ivs = [tuple([int(x) for x in p.strip().split(' ') if x]) for p in ub.codeblock(
     #     '''
@@ -2346,3 +2419,52 @@ def goons():
     #     3 14 1
     #     2 13 6
     #     ''').split('\n')]
+
+
+def type_effectiveness():
+    import pypogo
+    api = pypogo.api
+    import networkx as nx
+    super_effective = nx.DiGraph()
+    not_effective = nx.DiGraph()
+
+    isgoodagainst = nx.DiGraph()
+
+    from cmd_queue.util import util_networkx
+
+    for typename, emoji in api.type_to_emoji.items():
+        super_effective.add_node(typename, label=emoji)
+        not_effective.add_node(typename, label=emoji)
+        super_effective.add_node(typename)
+        not_effective.add_node(typename)
+        isgoodagainst.add_node(typename + '_attack')
+        isgoodagainst.add_node(typename + '_defender')
+
+    for attack_type, versus in api.data['type_effectiveness'].items():
+        for defend_type, factor in versus.items():
+            if factor > 1:
+                super_effective.add_edge(attack_type, defend_type, factor=factor)
+                isgoodagainst.add_edge(attack_type + '_attack', defend_type + '_defender')
+            if factor < 1:
+                not_effective.add_edge(attack_type, defend_type, factor=factor)
+                isgoodagainst.add_edge(defend_type + '_defender', attack_type + '_attack')
+
+    print('Super effectiveness graph')
+    util_networkx.write_network_text(super_effective)
+
+    print('Ineffectiveness graph')
+    util_networkx.write_network_text(not_effective)
+
+    print('Isgoodagainst graph')
+    util_networkx.write_network_text(isgoodagainst)
+
+    if 1:
+        import kwplot
+        kwplot.autosns()
+        from graphid import util
+        util.show_nx(not_effective, with_labels=False)
+        kwplot.figure(fnum=2)
+        util.show_nx(super_effective, with_labels=False)
+        kwplot.figure(fnum=2)
+        util.show_nx(isgoodagainst, with_labels=False)
+        util.dump_nx_ondisk(isgoodagainst, 'foo.png')
