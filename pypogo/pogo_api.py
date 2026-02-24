@@ -419,6 +419,16 @@ class PogoAPI(ub.NiceRepr):
             if name_ == 'clodsire':
                 form = 'Paldea'
 
+            # Pokemon with size forms (no "Normal" form exists)
+            if name_ in ('pumpkaboo', 'gourgeist'):
+                form = 'Average'
+                if 'small' in hints_:
+                    form = 'Small'
+                elif 'large' in hints_:
+                    form = 'Large'
+                elif 'super' in hints_:
+                    form = 'Super'
+
             if name_ == 'giratina':
                 form = 'altered'
                 if 'altered' in hints_:
