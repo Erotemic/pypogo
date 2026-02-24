@@ -300,6 +300,21 @@ class PogoAPI(ub.NiceRepr):
             #     assert form == 'Galarian', '{}, {}'.format(api, name)
             name = name.split('_galarian')[0]
 
+        if name.endswith('alolan') or name.endswith('alola'):
+            if form is None or form == 'Normal':
+                form = 'Alola'
+            name = name.split('_alola')[0].split('_alolan')[0]
+
+        if name.endswith('hisuian'):
+            if form is None or form == 'Normal':
+                form = 'Hisuian'
+            name = name.split('_hisuian')[0]
+
+        if name.endswith('paldean') or name.endswith('paldea'):
+            if form is None or form == 'Normal':
+                form = 'Paldea'
+            name = name.split('_paldea')[0].split('_paldean')[0]
+
         if name.endswith('snowy'):
             if form is None:
                 form = 'snowy'
@@ -341,6 +356,12 @@ class PogoAPI(ub.NiceRepr):
 
             if 'alolan' in hints_:
                 form = 'alola'
+
+            if 'hisuian' in hints_:
+                form = 'Hisuian'
+
+            if 'paldean' in hints_:
+                form = 'Paldea'
 
             if name_ == 'runerigus':
                 form = 'galarian'
@@ -386,6 +407,17 @@ class PogoAPI(ub.NiceRepr):
 
             if name_ == 'obstagoon':
                 form = 'galarian'
+
+            # Hisuian-only evolutions
+            if name_ == 'overqwil':
+                form = 'Hisuian'
+
+            if name_ == 'sneasler':
+                form = 'Hisuian'
+
+            # Paldean-only evolutions
+            if name_ == 'clodsire':
+                form = 'Paldea'
 
             if name_ == 'giratina':
                 form = 'altered'
